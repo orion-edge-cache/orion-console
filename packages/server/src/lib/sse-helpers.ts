@@ -3,8 +3,10 @@
  */
 
 import type { Response } from 'express';
-import type { DeploymentProgress } from '../deployment/types.js';
+import type { ProgressEvent } from '@orion/infra';
 import { redactCredentials } from './state.js';
+
+type DeploymentProgress = ProgressEvent;
 
 export function setSSEHeaders(res: Response): void {
   res.setHeader('Content-Type', 'text/event-stream');

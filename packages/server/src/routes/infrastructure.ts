@@ -6,6 +6,7 @@ import {
   getTerraformOutputs,
   type DeployConfig,
   type DestroyConfig,
+  type ProgressEvent,
 } from "@orion/infra";
 import {
   isLocked,
@@ -104,7 +105,7 @@ router.post("/infrastructure/deploy", async (req, res) => {
 
     setSSEHeaders(res);
 
-    deployInfrastructure(resolvedConfig, (progress) => {
+    deployInfrastructure(resolvedConfig, (progress: ProgressEvent) => {
       handleSSEProgress(progress, res);
     })
       .then(async () => {
@@ -113,7 +114,7 @@ router.post("/infrastructure/deploy", async (req, res) => {
         handleInfrastructureDeployed();
         await handleSSESuccess(res, "Deployment complete!");
       })
-      .catch(async (error) => {
+      .catch(async (error: Error) => {
         await releaseLock();
         await handleSSEError(res, error);
       });
@@ -158,7 +159,7 @@ router.post("/infrastructure/destroy", async (req, res) => {
 
     setSSEHeaders(res);
 
-    destroyInfrastructure(destroyConfig, (progress) => {
+    destroyInfrastructure(destroyConfig, (progress: ProgressEvent) => {
       handleSSEProgress(progress, res);
     })
       .then(async () => {
@@ -169,7 +170,7 @@ router.post("/infrastructure/destroy", async (req, res) => {
           await fs.unlink(BACKEND_URL_PATH).catch(() => {});
         });
       })
-      .catch(async (error) => {
+      .catch(async (error: Error) => {
         await releaseLock();
         await handleSSEError(res, error);
       });

@@ -17,7 +17,7 @@ const DB_PATH = path.join(ORION_CONFIG_DIR, 'observability.db');
 fs.mkdirSync(ORION_CONFIG_DIR, { recursive: true });
 
 // Initialize database
-const db = new Database(DB_PATH);
+const db: Database.Database = new Database(DB_PATH);
 db.pragma('journal_mode = WAL'); // Better concurrent access
 db.pragma('synchronous = NORMAL'); // Faster writes, still safe
 

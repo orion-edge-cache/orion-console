@@ -6,6 +6,8 @@ import fs from 'fs/promises';
 import { ValidationError } from './validation.js';
 import { ORION_CONFIG_DIR, TFSTATE_PATH, BACKEND_URL_PATH } from '@orion/infra';
 
+export { BACKEND_URL_PATH };
+
 export interface Resource {
   type: string;
   name: string;
