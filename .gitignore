@@ -1,0 +1,21 @@
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+.env
+.env.local
+.turbo
+.cache
+
+# Compiled files
+*.d.ts
+*.d.ts.map
+*.js
+*.js.map
+
+# Keep configuration files
+!*.config.js
+!vite.config.ts
+!postcss.config.js
+!tailwind.config.js
