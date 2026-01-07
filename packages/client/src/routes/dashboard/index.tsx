@@ -27,6 +27,7 @@ import {
   CheckCircle,
   XCircle,
   X,
+  Info,
 } from "lucide-react";
 import {
   Card,
@@ -367,6 +368,12 @@ function DashboardOverview() {
           accentColor="purple"
           onClick={() => handleDemoAction("run-tests")}
           loading={cacheTestsMutation.isPending}
+          tooltip={[
+            "Validates that cache headers are being set correctly",
+            "Tests cache HIT/MISS behavior",
+            "Verifies surrogate keys are working",
+            "Checks TTL configurations match expectations",
+          ]}
         />
 
         {/* Generate Traffic (Demo) */}
@@ -377,6 +384,12 @@ function DashboardOverview() {
           accentColor="cyan"
           onClick={() => handleDemoAction("generate-traffic")}
           loading={analyticsMutation.isPending}
+          tooltip={[
+            "Sends ~1000 sample GraphQL requests to the edge cache",
+            "Mix of queries and mutations",
+            "Populates the analytics dashboard with real data",
+            "Shows cache hit rate, latency comparisons, and performance metrics",
+          ]}
         />
       </Grid>
 
@@ -551,6 +564,7 @@ function ActionCard({
   accentColor,
   onClick,
   loading,
+  tooltip,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -558,7 +572,10 @@ function ActionCard({
   accentColor: "emerald" | "cyan" | "blue" | "amber" | "red" | "purple";
   onClick: () => void;
   loading?: boolean;
+  tooltip?: string[];
 }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
   const colorMap = {
     emerald: "bg-emerald-100 text-emerald-600",
     cyan: "bg-cyan-100 text-cyan-600",
@@ -570,7 +587,7 @@ function ActionCard({
 
   return (
     <Card
-      className="group cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+      className="group cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 relative"
       onClick={loading ? undefined : onClick}
     >
       <Flex alignItems="start" justifyContent="between" className="mb-3">
@@ -579,7 +596,31 @@ function ActionCard({
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : icon}
         </div>
-        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+        <div className="flex items-center gap-1">
+          {tooltip && (
+            <div
+              className="relative"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <Info className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-help" />
+              {showTooltip && (
+                <div className="absolute right-0 top-6 z-50 w-72 p-3 bg-slate-800 text-white text-xs rounded-lg shadow-xl">
+                  <ul className="space-y-1.5">
+                    {tooltip.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-slate-400 mt-0.5">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="absolute -top-1.5 right-2 w-3 h-3 bg-slate-800 rotate-45" />
+                </div>
+              )}
+            </div>
+          )}
+          <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+        </div>
       </Flex>
       <Title className="text-base font-semibold mb-1">{title}</Title>
       <Text className="text-sm">{description}</Text>
