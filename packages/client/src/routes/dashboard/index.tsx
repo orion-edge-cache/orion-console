@@ -691,6 +691,11 @@ function CacheTestsResultDialog({
                     </div>
                   ))}
                 </div>
+                {suite.name === "Surrogate Keys" && (
+                  <Text className="text-xs text-slate-500 mt-2 italic">
+                    Note: Uses X-Debug-Entities header (Surrogate-Key is stripped by Fastly before client delivery)
+                  </Text>
+                )}
               </div>
             ))}
           </div>
