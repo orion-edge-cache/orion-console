@@ -2,11 +2,10 @@
 export default {
   content: [
     "./index.html",
-    "./src/main.tsx",
-    "./src/routeTree.gen.ts",
-    "./src/{components,lib,routes,styles}/**/*.{js,ts,jsx,tsx}",
-    // Tremor components
+    "./src/**/*.{js,ts,jsx,tsx}",
+    // Tremor components - check both local and hoisted node_modules
     "./node_modules/@tremor/**/*.{js,ts,jsx,tsx}",
+    "../../node_modules/@tremor/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',
   theme: {

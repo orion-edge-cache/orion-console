@@ -6,7 +6,7 @@ import os from 'os';
 const router = express.Router();
 
 const ORION_CONFIG_DIR = path.join(os.homedir(), '.config/orion');
-const CREDENTIALS_PATH = path.join(ORION_CONFIG_DIR, 'credentials.json');
+const DEPLOYMENT_CONFIG_PATH = path.join(ORION_CONFIG_DIR, 'deployment-config.json');
 
 interface SavedCredentials {
   aws?: {
@@ -22,7 +22,7 @@ interface SavedCredentials {
 
 async function getSavedCredentials(): Promise<SavedCredentials | null> {
   try {
-    const content = await fs.readFile(CREDENTIALS_PATH, 'utf-8');
+    const content = await fs.readFile(DEPLOYMENT_CONFIG_PATH, 'utf-8');
     return JSON.parse(content);
   } catch {
     return null;
@@ -142,7 +142,7 @@ router.post('/credentials', async (req, res) => {
     await fs.mkdir(ORION_CONFIG_DIR, { recursive: true });
 
     await fs.writeFile(
-      CREDENTIALS_PATH,
+      DEPLOYMENT_CONFIG_PATH,
       JSON.stringify(credentials, null, 2),
       { mode: 0o600 }
     );
@@ -163,7 +163,7 @@ router.post('/credentials', async (req, res) => {
 
 router.get('/credentials', async (_req, res) => {
   try {
-    const exists = await fs.access(CREDENTIALS_PATH)
+    const exists = await fs.access(DEPLOYMENT_CONFIG_PATH)
       .then(() => true)
       .catch(() => false);
 
@@ -175,7 +175,7 @@ router.get('/credentials', async (_req, res) => {
       });
     }
 
-    const content = await fs.readFile(CREDENTIALS_PATH, 'utf-8');
+    const content = await fs.readFile(DEPLOYMENT_CONFIG_PATH, 'utf-8');
     const credentials: SavedCredentials = JSON.parse(content);
 
     res.json({
@@ -221,7 +221,7 @@ router.get('/credentials/destroy-requirements', (_req, res) => {
 
 router.delete('/credentials', async (_req, res) => {
   try {
-    await fs.unlink(CREDENTIALS_PATH).catch(() => {});
+    await fs.unlink(DEPLOYMENT_CONFIG_PATH).catch(() => {});
     res.json({ success: true, message: 'Credentials removed' });
   } catch (error) {
     console.error('Error deleting credentials:', error);

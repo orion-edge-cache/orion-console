@@ -18,7 +18,7 @@ import {
 } from './validation.js';
 import { ORION_CONFIG_DIR, BACKEND_URL_PATH } from '@orion/infra';
 
-const CREDENTIALS_PATH = path.join(ORION_CONFIG_DIR, 'credentials.json');
+const DEPLOYMENT_CONFIG_PATH = path.join(ORION_CONFIG_DIR, 'deployment-config.json');
 
 function resolveEnvDestroyConfig(): Partial<DestroyConfig> {
   const fastlyApiToken = process.env.FASTLY_API_KEY || process.env.FASTLY_API_TOKEN;
@@ -148,7 +148,7 @@ export async function saveDeploymentCredentials(
 
     await fs.mkdir(ORION_CONFIG_DIR, { recursive: true });
     await fs.writeFile(
-      CREDENTIALS_PATH,
+      DEPLOYMENT_CONFIG_PATH,
       JSON.stringify(credentials, null, 2),
       { mode: 0o600 },
     );

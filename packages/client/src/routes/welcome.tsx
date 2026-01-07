@@ -18,6 +18,9 @@ import {
   Rocket,
   ArrowLeft,
   ShieldCheck,
+  Server,
+  AlertTriangle,
+  Terminal,
 } from 'lucide-react';
 import {
   Card,
@@ -34,6 +37,8 @@ import {
 } from '@tremor/react';
 import { verifyCredentials } from '../hooks';
 import { getDestroyRequirements } from '../services/credentials-api';
+import { deployDemoApp, type DeployProgressEvent } from '../services/demo-app-api';
+import { checkCLIDependencies, type CLIDependencyStatus } from '../services/cli-dependencies-api';
 
 export const Route = createFileRoute('/welcome')({
   component: WelcomePage,
@@ -98,6 +103,15 @@ function WelcomePage() {
   const [deployError, setDeployError] = useState<string | null>(null);
   const [deployProgress, setDeployProgress] = useState(0);
 
+  // Demo app deployment state
+  const [isDemoAppDeploying, setIsDemoAppDeploying] = useState(false);
+  const [demoAppLogs, setDemoAppLogs] = useState<string[]>([]);
+  const [demoAppError, setDemoAppError] = useState<string | null>(null);
+
+  // CLI dependencies state
+  const [cliDependencies, setCLIDependencies] = useState<CLIDependencyStatus | null>(null);
+  const [isCheckingCLI, setIsCheckingCLI] = useState(true);
+
   const steps: { id: Step; label: string; icon: React.ReactNode }[] = [
     { id: 'credentials', label: 'Credentials', icon: <Key className="w-4 h-4" /> },
     { id: 'config', label: 'Configuration', icon: <Settings className="w-4 h-4" /> },
@@ -105,6 +119,18 @@ function WelcomePage() {
   ];
 
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
+
+  // Check CLI dependencies on mount
+  useEffect(() => {
+    setIsCheckingCLI(true);
+    checkCLIDependencies()
+      .then(status => {
+        setCLIDependencies(status);
+      })
+      .finally(() => {
+        setIsCheckingCLI(false);
+      });
+  }, []);
 
   // Fetch environment credentials on mount
   useEffect(() => {
@@ -270,6 +296,37 @@ function WelcomePage() {
 
   const canProceedFromConfig = credentials.graphqlUrl;
 
+  // Handle deploying demo app
+  const handleDeployDemoApp = async () => {
+    setIsDemoAppDeploying(true);
+    setDemoAppError(null);
+    setDemoAppLogs([]);
+
+    try {
+      const outputs = await deployDemoApp(
+        {
+          accessKeyId: useEnvAws ? undefined : credentials.awsAccessKeyId,
+          secretAccessKey: useEnvAws ? undefined : credentials.awsSecretAccessKey,
+          region: credentials.awsRegion,
+          useEnv: useEnvAws,
+        },
+        (event: DeployProgressEvent) => {
+          setDemoAppLogs((prev) => [...prev, event.message]);
+          if (event.error) {
+            setDemoAppError(event.error);
+          }
+        }
+      );
+
+      // Auto-populate GraphQL URL with demo app endpoint
+      updateCredential('graphqlUrl', outputs.graphqlEndpoint);
+      setIsDemoAppDeploying(false);
+    } catch (error) {
+      setDemoAppError(error instanceof Error ? error.message : 'Deployment failed');
+      setIsDemoAppDeploying(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-mesh">
       {/* Header */}
@@ -328,6 +385,80 @@ function WelcomePage() {
               </Flex>
             ))}
           </Flex>
+        </div>
+      )}
+
+      {/* CLI Dependencies Warning */}
+      {!isCheckingCLI && cliDependencies && !cliDependencies.allInstalled && (
+        <div className="max-w-3xl mx-auto px-6 pb-4">
+          <Callout title="Missing CLI Tools" icon={AlertTriangle} color="red">
+            <div className="space-y-2">
+              <Text>
+                The following CLI tools are required but not installed on the server:
+              </Text>
+              <ul className="list-disc list-inside text-sm">
+                {cliDependencies.dependencies
+                  .filter((dep) => !dep.installed)
+                  .map((dep) => (
+                    <li key={dep.command}>
+                      <span className="font-medium">{dep.name}</span>
+                      {dep.error && (
+                        <span className="text-slate-500 ml-1">- {dep.error}</span>
+                      )}
+                    </li>
+                  ))}
+              </ul>
+              <div className="pt-2 text-sm">
+                <Text className="font-medium">Installation links:</Text>
+                <ul className="list-disc list-inside">
+                  <li>
+                    <a
+                      href="https://developer.fastly.com/reference/cli/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-600 hover:underline"
+                    >
+                      Fastly CLI
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://developer.hashicorp.com/terraform/install"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-600 hover:underline"
+                    >
+                      Terraform
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </Callout>
+        </div>
+      )}
+
+      {/* CLI Dependencies Check in Progress */}
+      {isCheckingCLI && (
+        <div className="max-w-3xl mx-auto px-6 pb-4">
+          <Callout icon={Terminal} color="slate">
+            <Flex alignItems="center" className="gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <Text>Checking CLI dependencies...</Text>
+            </Flex>
+          </Callout>
+        </div>
+      )}
+
+      {/* CLI Dependencies OK */}
+      {!isCheckingCLI && cliDependencies?.allInstalled && (
+        <div className="max-w-3xl mx-auto px-6 pb-4">
+          <Callout icon={Terminal} color="emerald">
+            <Flex alignItems="center" className="gap-2">
+              <CheckCircle className="w-4 h-4" />
+              <Text>CLI dependencies verified (Fastly CLI, Terraform)</Text>
+            </Flex>
+          </Callout>
         </div>
       )}
 
@@ -581,6 +712,48 @@ function WelcomePage() {
                   Override the Host header sent to your origin
                 </Text>
               </div>
+
+              {/* Demo App Deployment Option */}
+              <div className="border-t pt-4 mt-4" style={{ borderColor: 'var(--color-border-subtle)' }}>
+                <Callout color="blue" icon={Server}>
+                  <div className="space-y-3">
+                    <div>
+                      <Text className="font-medium">Don't have a GraphQL endpoint?</Text>
+                      <Text className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                        Deploy our demo app to get a working GraphQL API with sample data.
+                      </Text>
+                    </div>
+                    
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      icon={isDemoAppDeploying ? Loader2 : Rocket}
+                      loading={isDemoAppDeploying}
+                      disabled={isDemoAppDeploying}
+                      onClick={handleDeployDemoApp}
+                    >
+                      {isDemoAppDeploying ? 'Deploying Demo App...' : 'Deploy Demo App'}
+                    </Button>
+
+                    {/* Demo app deployment logs */}
+                    {demoAppLogs.length > 0 && (
+                      <div className="rounded-lg p-3 bg-slate-900 text-slate-300 font-mono text-xs max-h-32 overflow-y-auto">
+                        {demoAppLogs.map((log, i) => (
+                          <div key={i}>{log}</div>
+                        ))}
+                        {isDemoAppDeploying && (
+                          <div className="animate-pulse text-cyan-400">Running...</div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Demo app error */}
+                    {demoAppError && (
+                      <Text className="text-sm text-red-500">{demoAppError}</Text>
+                    )}
+                  </div>
+                </Callout>
+              </div>
             </div>
 
             <div className="border-t mt-6 pt-6 flex justify-between" style={{ borderColor: 'var(--color-border-subtle)' }}>
@@ -690,13 +863,16 @@ function WelcomePage() {
               <Button
                 icon={isDeploying ? Loader2 : Rocket}
                 loading={isDeploying}
+                disabled={!cliDependencies?.allInstalled}
                 onClick={handleDeploy}
               >
-                {isDeploying
-                  ? 'Deploying...'
-                  : deployError
-                    ? 'Retry Deploy'
-                    : 'Deploy Now'
+                {!cliDependencies?.allInstalled
+                  ? 'Missing CLI Tools'
+                  : isDeploying
+                    ? 'Deploying...'
+                    : deployError
+                      ? 'Retry Deploy'
+                      : 'Deploy Now'
                 }
               </Button>
             </div>

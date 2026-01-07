@@ -15,6 +15,7 @@ import streamRoutes from "./routes/stream.js";
 import schemaRoutes from "./routes/schema.js";
 import cacheRoutes from "./routes/cache.js";
 import demoToolsRoutes from "./routes/demo-tools.js";
+import demoAppRoutes from "./routes/demo-app.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,7 @@ app.use("/api", streamRoutes);
 app.use("/api", schemaRoutes);
 app.use("/api", cacheRoutes);
 app.use("/api", demoToolsRoutes);
+app.use("/api", demoAppRoutes);
 
 const CONFIG_PATH = path.join(__dirname, "../../orion.config.ts");
 

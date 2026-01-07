@@ -32,5 +32,11 @@ export * from "./cache-api";
 // Demo Tools API
 export * from "./demo-tools-api";
 
+// Demo App API
+export * from "./demo-app-api";
+
+// CLI Dependencies API
+export * from "./cli-dependencies-api";
+
 // Query Keys
 export * from "./query-keys";

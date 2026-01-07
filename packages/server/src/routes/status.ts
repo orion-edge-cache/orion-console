@@ -1,5 +1,6 @@
 import express from 'express';
 import { getSystemState } from '../lib/state.js';
+import { checkCLIDependencies } from '../lib/cli-dependencies.js';
 
 const router = express.Router();
 
@@ -61,6 +62,24 @@ router.get('/infrastructure/status', async (_req, res) => {
     console.error('Error checking infrastructure status:', error);
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * Check if required CLI tools (fastly, terraform) are installed
+ */
+router.get('/cli-dependencies', async (_req, res) => {
+  try {
+    const status = await checkCLIDependencies();
+    res.json(status);
+  } catch (error) {
+    console.error('Error checking CLI dependencies:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      allInstalled: false,
+      dependencies: [],
+      missingCommands: [],
     });
   }
 });

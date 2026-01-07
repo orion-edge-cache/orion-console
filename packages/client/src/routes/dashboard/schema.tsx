@@ -339,7 +339,7 @@ function SchemaPage() {
                             onChange={setSaveApiKey}
                           />
                           <Text className="text-sm text-slate-600">
-                            Save to ~/.config/orion/credentials.json
+                            Save to ~/.config/orion/deployment-config.json
                           </Text>
                         </Flex>
                       </div>

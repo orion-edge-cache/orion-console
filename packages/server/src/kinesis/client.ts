@@ -19,7 +19,7 @@ import os from "os";
 // ═══════════════════════════════════════════════════════════════════════
 
 const ORION_CONFIG_DIR = path.join(os.homedir(), ".config/orion");
-const CREDENTIALS_PATH = path.join(ORION_CONFIG_DIR, "credentials.json");
+const DEPLOYMENT_CONFIG_PATH = path.join(ORION_CONFIG_DIR, "deployment-config.json");
 const TFSTATE_PATH = path.join(ORION_CONFIG_DIR, "terraform.tfstate");
 
 interface SavedCredentials {
@@ -82,7 +82,7 @@ export async function getCredentials(): Promise<AWSCredentials | null> {
 
   // Try saved credentials file
   try {
-    const content = await fs.readFile(CREDENTIALS_PATH, "utf-8");
+    const content = await fs.readFile(DEPLOYMENT_CONFIG_PATH, "utf-8");
     const saved: SavedCredentials = JSON.parse(content);
     if (saved.aws) {
       return {
@@ -92,7 +92,7 @@ export async function getCredentials(): Promise<AWSCredentials | null> {
       };
     }
   } catch {
-    // Credentials file doesn't exist
+    // Deployment config file doesn't exist
   }
 
   return null;
@@ -170,4 +170,4 @@ export async function reinitializeShardIterator(
   }
 }
 
-export { ORION_CONFIG_DIR, CREDENTIALS_PATH, TFSTATE_PATH };
+export { ORION_CONFIG_DIR, DEPLOYMENT_CONFIG_PATH, TFSTATE_PATH };

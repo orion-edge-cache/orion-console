@@ -21,6 +21,7 @@ import {
   Loader2,
   Key,
   FileSearch,
+  Terminal,
 } from 'lucide-react';
 import {
   Badge,
@@ -38,6 +39,7 @@ import {
   getInfrastructureStatus,
   getCredentialsStatus,
   getDestroyRequirements,
+  checkCLIDependencies,
 } from '../../services';
 import { useSystemState, planDestroy } from '../../hooks';
 
@@ -93,6 +95,13 @@ function InfrastructurePage() {
     queryFn: getDestroyRequirements,
     enabled: deployed === true,
   });
+
+  // CLI dependencies check
+  const { data: cliDependencies, isLoading: isCheckingCLI } = useQuery({
+    queryKey: ['cli-dependencies'],
+    queryFn: checkCLIDependencies,
+  });
+
   const requiredDestroyCreds = destroyRequirements?.required;
   const needsManualCredentials = !!(
     requiredDestroyCreds?.awsAccessKeyId ||
@@ -249,6 +258,78 @@ function InfrastructurePage() {
           </div>
         </Card>
 
+        {/* CLI Dependencies Status */}
+        <Card>
+          <Text className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+            CLI Dependencies
+          </Text>
+          {isCheckingCLI ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--color-text-muted)' }} />
+              <Text className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                Checking CLI tools...
+              </Text>
+            </div>
+          ) : cliDependencies?.allInstalled ? (
+            <div className="flex items-center gap-4 flex-wrap">
+              <Badge icon={CheckCircle} color="emerald" size="lg">
+                All CLI Tools Installed
+              </Badge>
+              <div className="flex gap-2">
+                {cliDependencies.dependencies.map((dep) => (
+                  <Badge key={dep.command} icon={Terminal} color="slate" size="sm">
+                    {dep.name}: {dep.version?.split('\n')[0] || 'OK'}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Badge icon={XCircle} color="red" size="lg">
+                  Missing CLI Tools
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                {cliDependencies?.dependencies.map((dep) => (
+                  <div key={dep.command} className="flex items-center gap-2">
+                    {dep.installed ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    )}
+                    <Text className="text-sm">
+                      {dep.name}: {dep.installed ? dep.version?.split('\n')[0] : dep.error}
+                    </Text>
+                  </div>
+                ))}
+              </div>
+              <Callout color="amber" icon={AlertTriangle}>
+                <Text className="text-sm">
+                  Install missing CLI tools to enable infrastructure operations.{' '}
+                  <a
+                    href="https://developer.fastly.com/reference/cli/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-600 hover:underline"
+                  >
+                    Fastly CLI
+                  </a>
+                  {' | '}
+                  <a
+                    href="https://developer.hashicorp.com/terraform/install"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-600 hover:underline"
+                  >
+                    Terraform
+                  </a>
+                </Text>
+              </Callout>
+            </div>
+          )}
+        </Card>
+
         {/* Resources */}
         {deployed && services && (
           <Card>
@@ -307,11 +388,16 @@ function InfrastructurePage() {
                   <Text className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
                     This will destroy: CDN service, Compute service, Kinesis stream, S3 bucket
                   </Text>
+                  {!cliDependencies?.allInstalled && (
+                    <Text className="text-xs mt-1" style={{ color: 'var(--color-error)' }}>
+                      Missing CLI tools - install Fastly CLI and Terraform to enable destruction
+                    </Text>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button
                     onClick={handlePlanDestroy}
-                    disabled={!canMutate || isPlanningDestroy}
+                    disabled={!canMutate || isPlanningDestroy || !cliDependencies?.allInstalled}
                     variant="secondary"
                     icon={FileSearch}
                     loading={isPlanningDestroy}
@@ -320,7 +406,7 @@ function InfrastructurePage() {
                   </Button>
                   <Button
                     onClick={() => setShowDestroyConfirm(true)}
-                    disabled={!canMutate}
+                    disabled={!canMutate || !cliDependencies?.allInstalled}
                     color="red"
                     icon={Trash2}
                   >

@@ -13,7 +13,7 @@ const CONFIG_PATH = path.join(__dirname, '../../../orion.config.ts');
 const ORION_CONFIG_DIR = path.join(os.homedir(), '.config/orion');
 const ORION_CONFIG_JSON_PATH = path.join(ORION_CONFIG_DIR, 'config.json');
 const TFSTATE_PATH = path.join(ORION_CONFIG_DIR, 'terraform.tfstate');
-const CREDENTIALS_PATH = path.join(ORION_CONFIG_DIR, 'credentials.json');
+const DEPLOYMENT_CONFIG_PATH = path.join(ORION_CONFIG_DIR, 'deployment-config.json');
 
 interface SavedCredentials {
   fastly?: {
@@ -146,11 +146,11 @@ async function updateFastlyConfigStore(config: OrionConfig): Promise<boolean> {
     let fastlyApiKey = process.env.FASTLY_API_KEY;
     if (!fastlyApiKey) {
       try {
-        const credsContent = await fs.readFile(CREDENTIALS_PATH, 'utf-8');
+        const credsContent = await fs.readFile(DEPLOYMENT_CONFIG_PATH, 'utf-8');
         const creds = JSON.parse(credsContent) as SavedCredentials;
         fastlyApiKey = creds.fastly?.apiToken;
       } catch {
-        // Credentials file not found
+        // Deployment config file not found
       }
     }
     if (!fastlyApiKey) {

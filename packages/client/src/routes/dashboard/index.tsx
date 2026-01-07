@@ -665,9 +665,8 @@ function CacheTestsResultDialog({
         <Flex justifyContent="between" alignItems="start" className="mb-4">
           <div className="flex items-center gap-3">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                result.success ? "bg-emerald-100" : "bg-red-100"
-              }`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${result.success ? "bg-emerald-100" : "bg-red-100"
+                }`}
             >
               {result.success ? (
                 <CheckCircle className="w-5 h-5 text-emerald-600" />
@@ -771,9 +770,8 @@ function AnalyticsResultDialog({
         <Flex justifyContent="between" alignItems="start" className="mb-4">
           <div className="flex items-center gap-3">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                result.success ? "bg-emerald-100" : "bg-red-100"
-              }`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${result.success ? "bg-emerald-100" : "bg-red-100"
+                }`}
             >
               {result.success ? (
                 <CheckCircle className="w-5 h-5 text-emerald-600" />
