@@ -9,22 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardSchemaRouteImport } from './routes/dashboard/schema'
 import { Route as DashboardPlaygroundRouteImport } from './routes/dashboard/playground'
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
-import { Route as DashboardInfrastructureRouteImport } from './routes/dashboard/infrastructure'
 import { Route as DashboardConfigureRouteImport } from './routes/dashboard/configure'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
+import { Route as DashboardInfrastructureIndexRouteImport } from './routes/dashboard/infrastructure/index'
 
-const WelcomeRoute = WelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -34,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeIndexRoute = WelcomeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WelcomeRoute,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
@@ -55,11 +55,6 @@ const DashboardLogsRoute = DashboardLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardInfrastructureRoute = DashboardInfrastructureRouteImport.update({
-  id: '/infrastructure',
-  path: '/infrastructure',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardConfigureRoute = DashboardConfigureRouteImport.update({
   id: '/configure',
   path: '/configure',
@@ -70,96 +65,94 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardInfrastructureIndexRoute =
+  DashboardInfrastructureIndexRouteImport.update({
+    id: '/infrastructure/',
+    path: '/infrastructure/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
-  '/welcome': typeof WelcomeRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/configure': typeof DashboardConfigureRoute
-  '/dashboard/infrastructure': typeof DashboardInfrastructureRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/playground': typeof DashboardPlaygroundRoute
   '/dashboard/schema': typeof DashboardSchemaRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/welcome/': typeof WelcomeIndexRoute
+  '/dashboard/infrastructure': typeof DashboardInfrastructureIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/welcome': typeof WelcomeRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/configure': typeof DashboardConfigureRoute
-  '/dashboard/infrastructure': typeof DashboardInfrastructureRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/playground': typeof DashboardPlaygroundRoute
   '/dashboard/schema': typeof DashboardSchemaRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/welcome': typeof WelcomeIndexRoute
+  '/dashboard/infrastructure': typeof DashboardInfrastructureIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
-  '/welcome': typeof WelcomeRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/configure': typeof DashboardConfigureRoute
-  '/dashboard/infrastructure': typeof DashboardInfrastructureRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/playground': typeof DashboardPlaygroundRoute
   '/dashboard/schema': typeof DashboardSchemaRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/welcome/': typeof WelcomeIndexRoute
+  '/dashboard/infrastructure/': typeof DashboardInfrastructureIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/dashboard'
-    | '/welcome'
     | '/dashboard/analytics'
     | '/dashboard/configure'
-    | '/dashboard/infrastructure'
     | '/dashboard/logs'
     | '/dashboard/playground'
     | '/dashboard/schema'
     | '/dashboard/'
+    | '/welcome/'
+    | '/dashboard/infrastructure'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/welcome'
     | '/dashboard/analytics'
     | '/dashboard/configure'
-    | '/dashboard/infrastructure'
     | '/dashboard/logs'
     | '/dashboard/playground'
     | '/dashboard/schema'
     | '/dashboard'
+    | '/welcome'
+    | '/dashboard/infrastructure'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
-    | '/welcome'
     | '/dashboard/analytics'
     | '/dashboard/configure'
-    | '/dashboard/infrastructure'
     | '/dashboard/logs'
     | '/dashboard/playground'
     | '/dashboard/schema'
     | '/dashboard/'
+    | '/welcome/'
+    | '/dashboard/infrastructure/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
-  WelcomeRoute: typeof WelcomeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/welcome': {
-      id: '/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof WelcomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -173,6 +166,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/welcome/': {
+      id: '/welcome/'
+      path: '/'
+      fullPath: '/welcome/'
+      preLoaderRoute: typeof WelcomeIndexRouteImport
+      parentRoute: typeof WelcomeRoute
     }
     '/dashboard/': {
       id: '/dashboard/'
@@ -202,13 +202,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLogsRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/infrastructure': {
-      id: '/dashboard/infrastructure'
-      path: '/infrastructure'
-      fullPath: '/dashboard/infrastructure'
-      preLoaderRoute: typeof DashboardInfrastructureRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/configure': {
       id: '/dashboard/configure'
       path: '/configure'
@@ -223,27 +216,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAnalyticsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/infrastructure/': {
+      id: '/dashboard/infrastructure/'
+      path: '/infrastructure'
+      fullPath: '/dashboard/infrastructure'
+      preLoaderRoute: typeof DashboardInfrastructureIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
   DashboardConfigureRoute: typeof DashboardConfigureRoute
-  DashboardInfrastructureRoute: typeof DashboardInfrastructureRoute
   DashboardLogsRoute: typeof DashboardLogsRoute
   DashboardPlaygroundRoute: typeof DashboardPlaygroundRoute
   DashboardSchemaRoute: typeof DashboardSchemaRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardInfrastructureIndexRoute: typeof DashboardInfrastructureIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAnalyticsRoute: DashboardAnalyticsRoute,
   DashboardConfigureRoute: DashboardConfigureRoute,
-  DashboardInfrastructureRoute: DashboardInfrastructureRoute,
   DashboardLogsRoute: DashboardLogsRoute,
   DashboardPlaygroundRoute: DashboardPlaygroundRoute,
   DashboardSchemaRoute: DashboardSchemaRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardInfrastructureIndexRoute: DashboardInfrastructureIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
@@ -253,7 +253,6 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
-  WelcomeRoute: WelcomeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
