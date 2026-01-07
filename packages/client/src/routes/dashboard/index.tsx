@@ -321,35 +321,6 @@ function DashboardOverview() {
         Quick Actions
       </Title>
       <Grid numItemsMd={2} numItemsLg={4} className="gap-4 mb-8">
-        <QuickActionCard
-          to="/dashboard/schema"
-          icon={<Sparkles className="w-5 h-5" />}
-          title="AI Config"
-          description="Generate cache rules with AI"
-          accentColor="amber"
-        />
-        <QuickActionCard
-          to="/dashboard/analytics"
-          icon={<BarChart3 className="w-5 h-5" />}
-          title="View Analytics"
-          description="Deep dive into cache performance"
-          accentColor="emerald"
-        />
-        <QuickActionCard
-          to="/dashboard/playground"
-          icon={<Play className="w-5 h-5" />}
-          title="Test Queries"
-          description="Try GraphQL queries live"
-          accentColor="cyan"
-        />
-        <QuickActionCard
-          to="/dashboard/configure"
-          icon={<FileCode className="w-5 h-5" />}
-          title="Edit Rules"
-          description="Configure cache TTLs"
-          accentColor="blue"
-        />
-
         {/* Purge Cache */}
         <ActionCard
           icon={<Trash2 className="w-5 h-5" />}
