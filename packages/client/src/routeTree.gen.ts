@@ -13,6 +13,7 @@ import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardSchemaRouteImport } from './routes/dashboard/schema'
 import { Route as DashboardPlaygroundRouteImport } from './routes/dashboard/playground'
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
 import { Route as DashboardInfrastructureRouteImport } from './routes/dashboard/infrastructure'
@@ -37,6 +38,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSchemaRoute = DashboardSchemaRouteImport.update({
+  id: '/schema',
+  path: '/schema',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardPlaygroundRoute = DashboardPlaygroundRouteImport.update({
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/infrastructure': typeof DashboardInfrastructureRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/playground': typeof DashboardPlaygroundRoute
+  '/dashboard/schema': typeof DashboardSchemaRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/dashboard/infrastructure': typeof DashboardInfrastructureRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/playground': typeof DashboardPlaygroundRoute
+  '/dashboard/schema': typeof DashboardSchemaRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/dashboard/infrastructure': typeof DashboardInfrastructureRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/playground': typeof DashboardPlaygroundRoute
+  '/dashboard/schema': typeof DashboardSchemaRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard/infrastructure'
     | '/dashboard/logs'
     | '/dashboard/playground'
+    | '/dashboard/schema'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/dashboard/infrastructure'
     | '/dashboard/logs'
     | '/dashboard/playground'
+    | '/dashboard/schema'
     | '/dashboard'
   id:
     | '__root__'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/dashboard/infrastructure'
     | '/dashboard/logs'
     | '/dashboard/playground'
+    | '/dashboard/schema'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -167,6 +179,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/schema': {
+      id: '/dashboard/schema'
+      path: '/schema'
+      fullPath: '/dashboard/schema'
+      preLoaderRoute: typeof DashboardSchemaRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/playground': {
@@ -213,6 +232,7 @@ interface DashboardRouteChildren {
   DashboardInfrastructureRoute: typeof DashboardInfrastructureRoute
   DashboardLogsRoute: typeof DashboardLogsRoute
   DashboardPlaygroundRoute: typeof DashboardPlaygroundRoute
+  DashboardSchemaRoute: typeof DashboardSchemaRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -222,6 +242,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardInfrastructureRoute: DashboardInfrastructureRoute,
   DashboardLogsRoute: DashboardLogsRoute,
   DashboardPlaygroundRoute: DashboardPlaygroundRoute,
+  DashboardSchemaRoute: DashboardSchemaRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 

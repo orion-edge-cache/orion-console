@@ -13,11 +13,13 @@ import {
   FileCode,
   ScrollText,
   Server,
-  ExternalLink
+  ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 
 const navItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { path: '/dashboard/schema', label: 'AI Config', icon: Sparkles },
   { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/dashboard/playground', label: 'Playground', icon: Play },
   { path: '/dashboard/configure', label: 'Rules', icon: FileCode },

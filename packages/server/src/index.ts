@@ -12,6 +12,9 @@ import observabilityRoutes from "./routes/observability.js";
 import playgroundRoutes from "./routes/playground.js";
 import grafanaRoutes from "./routes/grafana.js";
 import streamRoutes from "./routes/stream.js";
+import schemaRoutes from "./routes/schema.js";
+import cacheRoutes from "./routes/cache.js";
+import demoToolsRoutes from "./routes/demo-tools.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +33,9 @@ app.use("/api", observabilityRoutes);
 app.use("/api", playgroundRoutes);
 app.use("/api/grafana", grafanaRoutes);
 app.use("/api", streamRoutes);
+app.use("/api", schemaRoutes);
+app.use("/api", cacheRoutes);
+app.use("/api", demoToolsRoutes);
 
 const CONFIG_PATH = path.join(__dirname, "../../orion.config.ts");
 

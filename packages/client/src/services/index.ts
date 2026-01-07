@@ -23,5 +23,14 @@ export * from "./logs-api";
 // Credentials API
 export * from "./credentials-api";
 
+// Schema API
+export * from "./schema-api";
+
+// Cache API
+export * from "./cache-api";
+
+// Demo Tools API
+export * from "./demo-tools-api";
+
 // Query Keys
 export * from "./query-keys";
