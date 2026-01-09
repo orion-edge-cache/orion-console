@@ -5,8 +5,8 @@
  * on the system before allowing infrastructure operations.
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
@@ -31,16 +31,16 @@ export interface CLIDependencyStatus {
 async function checkCommand(
   name: string,
   command: string,
-  versionFlag: string
+  versionFlag: string,
 ): Promise<CLIDependency> {
   try {
     const { stdout } = await execAsync(`${command} ${versionFlag}`, {
       timeout: 10000,
     });
-    
+
     // Extract version from output (first line, trim whitespace)
-    const version = stdout.trim().split('\n')[0];
-    
+    const version = stdout.trim().split("\n")[0];
+
     return {
       name,
       command,
@@ -49,21 +49,22 @@ async function checkCommand(
       version: version || undefined,
     } as CLIDependency;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+
     // Check if it's a "command not found" type error
-    const isNotFound = 
-      errorMessage.includes('not found') ||
-      errorMessage.includes('not recognized') ||
-      errorMessage.includes('ENOENT');
-    
+    const isNotFound =
+      errorMessage.includes("not found") ||
+      errorMessage.includes("not recognized") ||
+      errorMessage.includes("ENOENT");
+
     return {
       name,
       command,
       versionFlag,
       installed: false,
-      error: isNotFound 
-        ? `${name} CLI is not installed` 
+      error: isNotFound
+        ? `${name} CLI is not installed`
         : `Failed to check ${name}: ${errorMessage}`,
     };
   }
@@ -74,13 +75,13 @@ async function checkCommand(
  */
 export async function checkCLIDependencies(): Promise<CLIDependencyStatus> {
   const dependencies = await Promise.all([
-    checkCommand('Fastly CLI', 'fastly', '--version'),
-    checkCommand('Terraform', 'terraform', '--version'),
+    checkCommand("Fastly CLI", "fastly", "version"),
+    checkCommand("Terraform", "terraform", "--version"),
   ]);
 
   const missingCommands = dependencies
-    .filter(dep => !dep.installed)
-    .map(dep => dep.name);
+    .filter((dep) => !dep.installed)
+    .map((dep) => dep.name);
 
   return {
     allInstalled: missingCommands.length === 0,
@@ -95,12 +96,12 @@ export async function checkCLIDependencies(): Promise<CLIDependencyStatus> {
  */
 export async function validateCLIDependencies(): Promise<void> {
   const status = await checkCLIDependencies();
-  
+
   if (!status.allInstalled) {
-    const missingList = status.missingCommands.join(', ');
+    const missingList = status.missingCommands.join(", ");
     throw new CLIDependencyError(
       `Missing required CLI tools: ${missingList}. Please install them before proceeding.`,
-      status
+      status,
     );
   }
 }
@@ -111,9 +112,9 @@ export async function validateCLIDependencies(): Promise<void> {
 export class CLIDependencyError extends Error {
   constructor(
     message: string,
-    public status: CLIDependencyStatus
+    public status: CLIDependencyStatus,
   ) {
     super(message);
-    this.name = 'CLIDependencyError';
+    this.name = "CLIDependencyError";
   }
 }
