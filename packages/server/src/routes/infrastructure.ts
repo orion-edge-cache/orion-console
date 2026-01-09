@@ -20,10 +20,7 @@ import {
   acquireLock,
   releaseLock,
 } from "../lib/state.js";
-import {
-  validateDeployConfig,
-  ValidationError,
-} from "../lib/validation.js";
+import { validateDeployConfig, ValidationError } from "../lib/validation.js";
 import {
   resolveDestroyConfig,
   resolveDeployConfig,
@@ -61,7 +58,7 @@ router.post("/infra/plan-destroy", async (_req, res) => {
 
     const outputs = await getTerraformOutputs();
     const resources = buildResourcesList(outputs);
-    
+
     // Check if demo app is also deployed
     const hasDemoApp = checkDemoAppDeployed();
 
@@ -202,15 +199,19 @@ router.post("/infrastructure/destroy", async (req, res) => {
 
     // Check if demo app is deployed and destroy it first
     const hasDemoApp = checkDemoAppDeployed();
-    
+
     const runDestroy = async () => {
       // Destroy demo app first if it exists
       if (hasDemoApp) {
         handleSSEProgress(
-          { step: "demo-app", message: "Destroying demo app (will also be removed)...", progress: 5 },
-          res
+          {
+            step: "demo-app",
+            message: "Destroying demo app (will also be removed)...",
+            progress: 5,
+          },
+          res,
         );
-        
+
         const demoAppConfig: DemoAppConfig = {
           aws: {
             accessKeyId: destroyConfig.awsAccessKeyId,
@@ -218,26 +219,34 @@ router.post("/infrastructure/destroy", async (req, res) => {
             region: destroyConfig.awsRegion,
           },
         };
-        
+
         await destroyDemoApp(demoAppConfig, (event: DemoProgressEvent) => {
           // Map demo app progress to 5-20% range
           const mappedProgress = 5 + Math.floor(event.progress * 0.15);
           handleSSEProgress(
-            { step: `demo-app-${event.step}`, message: `Demo app: ${event.message}`, progress: mappedProgress },
-            res
+            {
+              step: `demo-app-${event.step}`,
+              message: `Demo app: ${event.message}`,
+              progress: mappedProgress,
+            },
+            res,
           );
         });
-        
+
         handleSSEProgress(
-          { step: "demo-app-done", message: "Demo app destroyed", progress: 20 },
-          res
+          {
+            step: "demo-app-done",
+            message: "Demo app destroyed",
+            progress: 20,
+          },
+          res,
         );
       }
 
       // Now destroy Orion infrastructure
       await destroyInfrastructure(destroyConfig, (progress: ProgressEvent) => {
         // Map Orion progress to 20-100% range (or 0-100% if no demo app)
-        const mappedProgress = hasDemoApp 
+        const mappedProgress = hasDemoApp
           ? 20 + Math.floor(progress.progress * 0.8)
           : progress.progress;
         handleSSEProgress({ ...progress, progress: mappedProgress }, res);

@@ -31,9 +31,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelcomeIndexRoute = WelcomeIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => WelcomeRoute,
+  id: '/welcome/',
+  path: '/welcome/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
@@ -81,7 +81,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/playground': typeof DashboardPlaygroundRoute
   '/dashboard/schema': typeof DashboardSchemaRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/welcome/': typeof WelcomeIndexRoute
+  '/welcome': typeof WelcomeIndexRoute
   '/dashboard/infrastructure': typeof DashboardInfrastructureIndexRoute
 }
 export interface FileRoutesByTo {
@@ -119,7 +119,7 @@ export interface FileRouteTypes {
     | '/dashboard/playground'
     | '/dashboard/schema'
     | '/dashboard/'
-    | '/welcome/'
+    | '/welcome'
     | '/dashboard/infrastructure'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,6 +149,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  WelcomeIndexRoute: typeof WelcomeIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -169,10 +170,10 @@ declare module '@tanstack/react-router' {
     }
     '/welcome/': {
       id: '/welcome/'
-      path: '/'
-      fullPath: '/welcome/'
+      path: '/welcome'
+      fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeIndexRouteImport
-      parentRoute: typeof WelcomeRoute
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
       id: '/dashboard/'
@@ -253,6 +254,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  WelcomeIndexRoute: WelcomeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
