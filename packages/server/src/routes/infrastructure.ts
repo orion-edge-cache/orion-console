@@ -4,6 +4,7 @@ import {
   deployInfrastructure,
   destroyInfrastructure,
   getTerraformOutputs,
+  cleanupAfterDestroy,
   type DeployConfig,
   type DestroyConfig,
   type ProgressEvent,
@@ -34,10 +35,7 @@ import {
   handleSSESuccess,
   handleSSEError,
 } from "../lib/sse-helpers.js";
-import {
-  buildResourcesList,
-  BACKEND_URL_PATH,
-} from "../lib/terraform-state.js";
+import { buildResourcesList } from "../lib/terraform-state.js";
 import {
   handleInfrastructureDestroyed,
   handleInfrastructureDeployed,
@@ -278,7 +276,7 @@ router.post("/infrastructure/destroy", async (req, res) => {
         // Fire-and-forget: stop Kinesis consumer since infrastructure is gone
         handleInfrastructureDestroyed();
         await handleSSESuccess(res, "Infrastructure destroyed!", async () => {
-          await fs.unlink(BACKEND_URL_PATH).catch(() => {});
+          await cleanupAfterDestroy();
         });
       })
       .catch(async (error: Error) => {
