@@ -11,6 +11,7 @@ import {
 import {
   destroyDemoApp,
   checkDemoAppDeployed,
+  getDemoAppStatus,
   type DemoAppConfig,
   type ProgressEvent as DemoProgressEvent,
 } from "@orion/demo-app";
@@ -62,8 +63,26 @@ router.post("/infra/plan-destroy", async (_req, res) => {
     // Check if demo app is also deployed
     const hasDemoApp = checkDemoAppDeployed();
 
+    // Get demo app resources if deployed
+    let demoAppResources: Array<{ type: string; name: string; provider: string }> = [];
+    if (hasDemoApp) {
+      try {
+        const demoStatus = await getDemoAppStatus();
+        if (demoStatus.deployed && demoStatus.outputs) {
+          demoAppResources = [
+            { type: 'AWS Lambda', name: demoStatus.outputs.lambdaFunctionName || '', provider: 'aws' },
+            { type: 'AWS S3 Bucket', name: demoStatus.outputs.clientBucket || '', provider: 'aws' },
+            { type: 'AWS API Gateway', name: 'orion-demo-app-api', provider: 'aws' },
+          ].filter(r => r.name);
+        }
+      } catch (error) {
+        console.error("Error getting demo app status:", error);
+      }
+    }
+
     res.json({
       resources,
+      demoAppResources,
       hasDemoApp,
       warning: hasDemoApp
         ? "This action cannot be undone. All data will be permanently deleted. The demo app will also be destroyed."

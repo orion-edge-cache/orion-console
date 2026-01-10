@@ -3,6 +3,8 @@ import { FileSearch, AlertTriangle, Trash2 } from 'lucide-react';
 
 interface PlanResult {
   resources: Array<{ type: string; name: string; provider: string }>;
+  demoAppResources?: Array<{ type: string; name: string; provider: string }>;
+  hasDemoApp?: boolean;
   warning: string;
 }
 
@@ -32,7 +34,7 @@ export function PlanDestroyModal({ planResult, onClose, onProceed }: PlanDestroy
 
         <div className="space-y-2 mb-6">
           <Text className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-            Resources to be destroyed:
+            Orion resources to be destroyed:
           </Text>
           <div
             className="rounded-lg p-3 max-h-48 overflow-y-auto"
@@ -58,6 +60,38 @@ export function PlanDestroyModal({ planResult, onClose, onProceed }: PlanDestroy
               </div>
             ))}
           </div>
+
+          {planResult.demoAppResources && planResult.demoAppResources.length > 0 && (
+            <>
+              <Text className="text-sm font-medium mt-4" style={{ color: 'var(--color-text-secondary)' }}>
+                Demo App resources to be destroyed:
+              </Text>
+              <div
+                className="rounded-lg p-3 max-h-48 overflow-y-auto"
+                style={{ background: 'var(--color-bg-tertiary)' }}
+              >
+                {planResult.demoAppResources.map((r, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-1.5 border-b last:border-0"
+                    style={{ borderColor: 'var(--color-border-subtle)' }}
+                  >
+                    <div>
+                      <Text className="text-sm font-mono" style={{ color: 'var(--color-text-primary)' }}>
+                        {r.name}
+                      </Text>
+                      <Text className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                        {r.type}
+                      </Text>
+                    </div>
+                    <Badge color="amber" size="sm">
+                      aws
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex justify-end gap-3">
