@@ -46,6 +46,9 @@ router.get('/infrastructure/status', async (_req, res) => {
           compute: outputs.compute_service?.value?.id,
           kinesis: outputs.kinesis_stream?.value?.name,
           s3: outputs.s3_bucket?.value?.name,
+          configstore: outputs.configstore?.value?.name,
+          secretstore: outputs.secretstore?.value?.name,
+          iamRole: outputs.iam_role?.value?.name,
         };
       } catch (error) {
         console.error('Error reading terraform state:', error);

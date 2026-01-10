@@ -68,6 +68,9 @@ export interface InfrastructureStatus {
     compute?: string;
     kinesis?: string;
     s3?: string;
+    configstore?: string;
+    secretstore?: string;
+    iamRole?: string;
   };
   demoApp?: {
     deployed: boolean;

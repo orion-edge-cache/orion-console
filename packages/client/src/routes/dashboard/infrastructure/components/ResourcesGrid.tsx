@@ -1,5 +1,5 @@
 import { Card, Text, Grid } from '@tremor/react';
-import { Server, Cloud, Database, Archive, Globe, FolderOpen } from 'lucide-react';
+import { Server, Cloud, Database, Archive, Globe, FolderOpen, Settings, Lock, Shield } from 'lucide-react';
 import { ResourceCard } from './ResourceCard';
 
 interface Services {
@@ -7,6 +7,9 @@ interface Services {
   compute?: string;
   kinesis?: string;
   s3?: string;
+  configstore?: string;
+  secretstore?: string;
+  iamRole?: string;
 }
 
 interface DemoApp {
@@ -56,6 +59,27 @@ export function ResourcesGrid({ services, demoApp }: ResourcesGridProps) {
             value={services.s3 || 'N/A'}
             provider="aws"
             link={services.s3 ? `https://s3.console.aws.amazon.com/s3/buckets/${services.s3}` : undefined}
+          />
+          <ResourceCard
+            icon={<Settings className="w-5 h-5" />}
+            label="Config Store"
+            value={services.configstore || 'N/A'}
+            provider="fastly"
+            link={services.configstore ? `https://manage.fastly.com/resources/config-stores` : undefined}
+          />
+          <ResourceCard
+            icon={<Lock className="w-5 h-5" />}
+            label="Secret Store"
+            value={services.secretstore || 'N/A'}
+            provider="fastly"
+            link={services.secretstore ? `https://manage.fastly.com/resources/secret-stores` : undefined}
+          />
+          <ResourceCard
+            icon={<Shield className="w-5 h-5" />}
+            label="IAM Role"
+            value={services.iamRole || 'N/A'}
+            provider="aws"
+            link={services.iamRole ? `https://console.aws.amazon.com/iam/home#/roles/${services.iamRole}` : undefined}
           />
         </Grid>
       </Card>
