@@ -32,6 +32,7 @@ import {
   getConfig,
   getInfrastructureStatus,
   purgeCache,
+  getSchemaEndpoint,
 } from "../../services";
 
 // Context
@@ -44,7 +45,6 @@ import { ConfirmDialog, AlertDialog, Toast } from "../../components/Dialogs";
 import {
   StatCard,
   ActionCard,
-  ResourceRow,
   StatusBanner,
 } from "../../components/dashboard";
 import {
@@ -79,6 +79,13 @@ function DashboardOverview() {
     staleTime: 30000,
   });
 
+  const { data: endpointData } = useQuery({
+    queryKey: ["schema-endpoint"],
+    queryFn: getSchemaEndpoint,
+    staleTime: 30000,
+    retry: false,
+  });
+
   // Metrics context
   const { dataPoints, isConnected } = useMetrics();
 
@@ -102,6 +109,7 @@ function DashboardOverview() {
   const config = configData?.config;
   const services = infraData?.status?.services;
   const deployed = infraData?.status?.deployed;
+  const graphqlEndpoint = endpointData?.endpoint;
 
   return (
     <div className="min-h-full p-8 animate-fade-in">
@@ -131,7 +139,7 @@ function DashboardOverview() {
 
       {/* Status Banner */}
       {deployed && services?.cdn && (
-        <StatusBanner cdnUrl={services.cdn} />
+        <StatusBanner cdnUrl={services.cdn} graphqlEndpoint={graphqlEndpoint} />
       )}
 
       {/* Stats Grid - 4 columns */}
@@ -222,42 +230,6 @@ function DashboardOverview() {
           ]}
         />
       </Grid>
-
-      {/* Deployed Resources */}
-      {deployed && services && (
-        <>
-          <Title
-            className="font-display text-lg font-semibold mb-4"
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            Deployed Resources
-          </Title>
-          <Card>
-            <Grid numItemsMd={2} className="gap-3">
-              <ResourceRow
-                label="CDN Service"
-                value={services.cdn}
-                provider="Fastly"
-              />
-              <ResourceRow
-                label="Compute Service"
-                value={services.compute}
-                provider="Fastly"
-              />
-              <ResourceRow
-                label="Kinesis Stream"
-                value={services.kinesis}
-                provider="AWS"
-              />
-              <ResourceRow
-                label="S3 Bucket"
-                value={services.s3}
-                provider="AWS"
-              />
-            </Grid>
-          </Card>
-        </>
-      )}
 
       {/* Purge Confirmation Dialog */}
       {showPurgeConfirm && (
