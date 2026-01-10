@@ -17,6 +17,7 @@ import {
   WifiOff,
   Trash2,
   TestTube2,
+  Heart,
 } from "lucide-react";
 import {
   Card,
@@ -34,12 +35,13 @@ import {
   purgeCache,
   getSchemaEndpoint,
 } from "../../services";
+import { checkDemoAppHealth } from "../../services/demo-app-api";
 
 // Context
 import { useMetrics } from "../../context";
 
 // Shared components
-import { ConfirmDialog, AlertDialog, Toast } from "../../components/Dialogs";
+import { ConfirmDialog, Toast } from "../../components/Dialogs";
 
 // Dashboard-specific components
 import {
@@ -65,6 +67,7 @@ export const Route = createFileRoute("/dashboard/")({
 
 function DashboardOverview() {
   const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false);
 
   // Queries
   const { data: configData } = useQuery({
@@ -105,11 +108,29 @@ function DashboardOverview() {
     },
   });
 
+  // Health check handler
+  const handleHealthCheck = async () => {
+    setIsCheckingHealth(true);
+    try {
+      const result = await checkDemoAppHealth();
+      if (result.healthy) {
+        showToast(`Demo app healthy (${result.environment || "unknown"})`, "success");
+      } else {
+        showToast(result.error || "Health check failed", "error");
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Health check failed", "error");
+    } finally {
+      setIsCheckingHealth(false);
+    }
+  };
+
   // Derived data
   const config = configData?.config;
   const services = infraData?.status?.services;
   const deployed = infraData?.status?.deployed;
   const graphqlEndpoint = endpointData?.endpoint;
+  const demoAppUsed = Boolean(infraData?.status?.demoApp?.deployed);
 
   return (
     <div className="min-h-full p-8 animate-fade-in">
@@ -197,39 +218,66 @@ function DashboardOverview() {
           onClick={() => setShowPurgeConfirm(true)}
           loading={purgeMutation.isPending}
         />
-
-        {/* Run Tests (Demo) */}
-        <ActionCard
-          icon={<TestTube2 className="w-5 h-5" />}
-          title="Run Tests"
-          description="Run cache validation tests"
-          accentColor="purple"
-          onClick={() => demoActions.handleDemoAction("run-tests")}
-          loading={demoActions.cacheTestsMutation.isPending}
-          tooltip={[
-            "Validates that cache headers are being set correctly",
-            "Tests cache HIT/MISS behavior",
-            "Verifies surrogate keys are working",
-            "Checks TTL configurations match expectations",
-          ]}
-        />
-
-        {/* Generate Traffic (Demo) */}
-        <ActionCard
-          icon={<Activity className="w-5 h-5" />}
-          title="Generate Traffic"
-          description="Create sample analytics data"
-          accentColor="cyan"
-          onClick={() => demoActions.handleDemoAction("generate-traffic")}
-          loading={demoActions.analyticsMutation.isPending}
-          tooltip={[
-            "Sends ~1000 sample GraphQL requests to the edge cache",
-            "Mix of queries and mutations",
-            "Populates the analytics dashboard with real data",
-            "Shows cache hit rate, latency comparisons, and performance metrics",
-          ]}
-        />
       </Grid>
+
+      {demoAppUsed && (
+        <>
+          {/* Demo App Actions */}
+          <Title
+            className="font-display text-lg font-semibold mb-4"
+            style={{ color: "var(--color-text-primary)" }}
+          >
+            Demo App Actions
+          </Title>
+          <Grid numItemsMd={2} numItemsLg={4} className="gap-4 mb-8">
+            {/* Run Tests (Demo) */}
+            <ActionCard
+              icon={<TestTube2 className="w-5 h-5" />}
+              title="Run Tests"
+              description="Run cache validation tests"
+              accentColor="purple"
+              onClick={() => demoActions.handleDemoAction("run-tests")}
+              loading={demoActions.cacheTestsMutation.isPending}
+              tooltip={[
+                "Validates that cache headers are being set correctly",
+                "Tests cache HIT/MISS behavior",
+                "Verifies surrogate keys are working",
+                "Checks TTL configurations match expectations",
+              ]}
+            />
+
+            {/* Generate Traffic (Demo) */}
+            <ActionCard
+              icon={<Activity className="w-5 h-5" />}
+              title="Generate Traffic"
+              description="Create sample analytics data"
+              accentColor="cyan"
+              onClick={() => demoActions.handleDemoAction("generate-traffic")}
+              loading={demoActions.analyticsMutation.isPending}
+              tooltip={[
+                "Sends ~1000 sample GraphQL requests to the edge cache",
+                "Mix of queries and mutations",
+                "Populates the analytics dashboard with real data",
+                "Shows cache hit rate, latency comparisons, and performance metrics",
+              ]}
+            />
+
+            {/* Health Check (Demo) */}
+            <ActionCard
+              icon={<Heart className="w-5 h-5" />}
+              title="Health Check"
+              description="Check demo app status"
+              accentColor="emerald"
+              onClick={handleHealthCheck}
+              loading={isCheckingHealth}
+              tooltip={[
+                "Pings the demo app Lambda /health endpoint",
+                "Verifies the GraphQL server is responding",
+              ]}
+            />
+          </Grid>
+        </>
+      )}
 
       {/* Purge Confirmation Dialog */}
       {showPurgeConfirm && (
@@ -243,24 +291,6 @@ function DashboardOverview() {
             setShowPurgeConfirm(false);
           }}
           onCancel={() => setShowPurgeConfirm(false)}
-        />
-      )}
-
-      {/* Demo Tools Alert */}
-      {demoActions.showDemoAlert && (
-        <AlertDialog
-          title="Demo App Required"
-          message={
-            demoActions.showDemoAlert === "run-tests"
-              ? "Run Tests is designed specifically for the Orion Demo App. It validates cache behavior using the demo app's GraphQL schema."
-              : "Generate Traffic creates sample traffic using the Orion Demo App's GraphQL queries and mutations to populate analytics data."
-          }
-          linkText="View Demo App Setup"
-          linkUrl="https://github.com/orion-edge-cache/orion-demo-app"
-          showDontShowAgain={true}
-          onDontShowAgain={demoActions.handleDontShowAgain}
-          onConfirm={demoActions.handleDemoAlertConfirm}
-          onDismiss={demoActions.handleDemoAlertDismiss}
         />
       )}
 

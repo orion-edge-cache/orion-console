@@ -53,9 +53,24 @@ export function useDestroyFlow() {
     }
   }, []);
 
+  const closePlanModal = useCallback(() => {
+    setShowPlanModal(false);
+  }, []);
+
+  const proceedFromPlan = useCallback(() => {
+    setShowPlanModal(false);
+    setShowDestroyConfirm(true);
+  }, []);
+
+  const cancelDestroy = useCallback(() => {
+    setShowDestroyConfirm(false);
+    setConfirmText('');
+  }, []);
+
   const handleDestroy = useCallback(async (hasSavedCreds: boolean) => {
     if (confirmText !== 'DESTROY') return;
 
+    cancelDestroy();
     setIsDestroying(true);
     setDestroyLogs([]);
 
@@ -116,21 +131,7 @@ export function useDestroyFlow() {
     } finally {
       setIsDestroying(false);
     }
-  }, [confirmText, useSavedCreds, destroyCredentials, queryClient, navigate]);
-
-  const closePlanModal = useCallback(() => {
-    setShowPlanModal(false);
-  }, []);
-
-  const proceedFromPlan = useCallback(() => {
-    setShowPlanModal(false);
-    setShowDestroyConfirm(true);
-  }, []);
-
-  const cancelDestroy = useCallback(() => {
-    setShowDestroyConfirm(false);
-    setConfirmText('');
-  }, []);
+  }, [confirmText, useSavedCreds, destroyCredentials, queryClient, navigate, cancelDestroy]);
 
   const updateDestroyCredential = useCallback((key: keyof DestroyCredentials, value: string) => {
     setDestroyCredentials((prev) => ({ ...prev, [key]: value }));

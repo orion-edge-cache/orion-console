@@ -1,5 +1,5 @@
 import { Card, Text, Button, Callout, Badge } from '@tremor/react';
-import { FileSearch, AlertTriangle, Trash2 } from 'lucide-react';
+import { FileSearch, AlertTriangle, Trash2, X } from 'lucide-react';
 
 interface PlanResult {
   resources: Array<{ type: string; name: string; provider: string }>;
@@ -19,13 +19,25 @@ export function PlanDestroyModal({ planResult, onClose, onProceed }: PlanDestroy
     <div
       className="fixed inset-0 flex items-center justify-center z-50"
       style={{ background: 'rgba(0, 0, 0, 0.4)' }}
+      onClick={onClose}
     >
-      <Card className="max-w-lg w-full mx-4">
-        <div className="flex items-center gap-2 mb-4">
-          <FileSearch className="w-5 h-5" style={{ color: 'var(--color-error)' }} />
-          <Text className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-            Destruction Plan
-          </Text>
+      <Card
+        className="max-w-lg w-full mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <FileSearch className="w-5 h-5" style={{ color: 'var(--color-error)' }} />
+            <Text className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+              Destruction Plan
+            </Text>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <Callout title="Warning" icon={AlertTriangle} color="red" className="mb-4">

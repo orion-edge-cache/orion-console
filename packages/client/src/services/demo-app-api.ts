@@ -39,6 +39,14 @@ export interface DeployProgressEvent {
   outputs?: DemoAppOutputs;
 }
 
+export interface DemoAppHealthResponse {
+  healthy: boolean;
+  status?: string;
+  environment?: string;
+  timestamp?: string;
+  error?: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API Functions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -171,4 +179,12 @@ export async function destroyDemoApp(
       }
     }
   }
+}
+
+/**
+ * Check demo app health
+ */
+export async function checkDemoAppHealth(): Promise<DemoAppHealthResponse> {
+  const response = await fetch(`${API_BASE_URL}/demo-app/health`);
+  return response.json();
 }

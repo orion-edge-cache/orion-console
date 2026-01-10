@@ -55,6 +55,13 @@ export interface LatencyComparison {
   speedup: number;
 }
 
+export interface ErrorSample {
+  type: string;
+  status: number;
+  query: string;
+  errorMessage: string;
+}
+
 export interface AnalyticsResult {
   success: boolean;
   endpoint: string;
@@ -62,6 +69,7 @@ export interface AnalyticsResult {
   duration: number;
   stats: BatchStats;
   latencyComparison: LatencyComparison | null;
+  errorSamples?: ErrorSample[];
   error?: string;
 }
 

@@ -1,6 +1,6 @@
 import { Card, Text, Button } from '@tremor/react';
 import { AlertTriangle, Trash2, FileSearch } from 'lucide-react';
-import { DestroyConfirmForm } from './DestroyConfirmForm';
+import { DestroyConfirmModal } from './DestroyConfirmModal';
 import { DestroyProgress } from './DestroyProgress';
 import { PlanDestroyModal } from './PlanDestroyModal';
 import type { CLIDependencyStatus } from '../../../../services/cli-dependencies-api';
@@ -73,7 +73,7 @@ export function DangerZone(props: DangerZoneProps) {
     handleDestroy,
   } = props;
 
-  const showInitialState = !showDestroyConfirm && !isDestroying && destroyLogs.length === 0;
+  const showInitialState = !isDestroying && destroyLogs.length === 0;
 
   return (
     <>
@@ -122,27 +122,28 @@ export function DangerZone(props: DangerZoneProps) {
           </div>
         )}
 
-        {showDestroyConfirm && !isDestroying && destroyLogs.length === 0 && (
-          <DestroyConfirmForm
-            hasSavedCreds={hasSavedCreds}
-            savedCredsInfo={savedCredsInfo}
-            useSavedCreds={useSavedCreds}
-            setUseSavedCreds={setUseSavedCreds}
-            needsManualCredentials={needsManualCredentials}
-            requiredCredentials={requiredCredentials}
-            destroyCredentials={destroyCredentials}
-            updateCredential={updateDestroyCredential}
-            confirmText={confirmText}
-            setConfirmText={setConfirmText}
-            onCancel={cancelDestroy}
-            onConfirm={() => handleDestroy(hasSavedCreds)}
-          />
-        )}
-
         {(isDestroying || destroyLogs.length > 0) && (
           <DestroyProgress isDestroying={isDestroying} logs={destroyLogs} />
         )}
       </Card>
+
+      {/* Destroy Confirm Modal */}
+      {showDestroyConfirm && (
+        <DestroyConfirmModal
+          hasSavedCreds={hasSavedCreds}
+          savedCredsInfo={savedCredsInfo}
+          useSavedCreds={useSavedCreds}
+          setUseSavedCreds={setUseSavedCreds}
+          needsManualCredentials={needsManualCredentials}
+          requiredCredentials={requiredCredentials}
+          destroyCredentials={destroyCredentials}
+          updateCredential={updateDestroyCredential}
+          confirmText={confirmText}
+          setConfirmText={setConfirmText}
+          onCancel={cancelDestroy}
+          onConfirm={() => handleDestroy(hasSavedCreds)}
+        />
+      )}
 
       {/* Plan Modal */}
       {showPlanModal && planResult && (

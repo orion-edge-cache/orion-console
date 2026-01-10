@@ -33,6 +33,62 @@ router.get("/demo-app/status", async (_req, res) => {
 });
 
 /**
+ * GET /api/demo-app/health
+ * Checks health of the deployed demo app Lambda
+ */
+router.get("/demo-app/health", async (_req, res) => {
+  try {
+    const status = await getDemoAppStatus();
+
+    if (!status.deployed || !status.outputs?.graphqlEndpoint) {
+      return res.status(404).json({
+        healthy: false,
+        error: "Demo app not deployed",
+      });
+    }
+
+    // Extract base URL from graphql endpoint (remove /graphql suffix)
+    const baseUrl = status.outputs.graphqlEndpoint.replace(/\/graphql$/, "");
+    const healthUrl = `${baseUrl}/health`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const response = await fetch(healthUrl, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const data = await response.json();
+        res.json({
+          healthy: true,
+          ...data,
+        });
+      } else {
+        res.json({
+          healthy: false,
+          error: `Health check returned ${response.status}`,
+        });
+      }
+    } catch (fetchError) {
+      clearTimeout(timeout);
+      res.json({
+        healthy: false,
+        error: fetchError instanceof Error ? fetchError.message : "Request failed",
+      });
+    }
+  } catch (error) {
+    console.error("Error checking demo app health:", error);
+    res.status(500).json({
+      healthy: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
  * POST /api/demo-app/deploy
  * Deploys the demo app to AWS Lambda
  * Streams progress via SSE

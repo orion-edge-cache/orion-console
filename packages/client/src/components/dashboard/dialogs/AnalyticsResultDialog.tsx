@@ -1,4 +1,5 @@
-import { CheckCircle, XCircle, X } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, XCircle, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, Title, Text, Grid, Button, Flex } from "@tremor/react";
 import type { AnalyticsResult } from "../../../services";
 
@@ -8,6 +9,8 @@ interface AnalyticsResultDialogProps {
 }
 
 export function AnalyticsResultDialog({ result, onClose }: AnalyticsResultDialogProps) {
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
+
   const hitRate =
     result.stats.total > 0
       ? ((result.stats.cacheHits / result.stats.total) * 100).toFixed(1)
@@ -151,9 +154,50 @@ export function AnalyticsResultDialog({ result, onClose }: AnalyticsResultDialog
             {/* Errors */}
             {result.stats.errors > 0 && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <Text className="text-red-700">
-                  {result.stats.errors} errors occurred during generation
-                </Text>
+                <div
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setShowErrorDetails(!showErrorDetails)}
+                >
+                  <Text className="text-red-700">
+                    {result.stats.errors} errors occurred during generation
+                  </Text>
+                  {result.errorSamples && result.errorSamples.length > 0 && (
+                    <button className="text-red-600 hover:text-red-800">
+                      {showErrorDetails ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
+                {showErrorDetails && result.errorSamples && result.errorSamples.length > 0 && (
+                  <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+                    {result.errorSamples.map((sample, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white/50 rounded p-2 text-xs font-mono"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-red-600 font-semibold">
+                            {sample.type}
+                          </span>
+                          <span className="text-slate-500">
+                            HTTP {sample.status}
+                          </span>
+                        </div>
+                        <div className="text-red-700 break-all">
+                          {sample.errorMessage}
+                        </div>
+                      </div>
+                    ))}
+                    {result.errorSamples.length < result.stats.errors && (
+                      <Text className="text-xs text-red-500 italic">
+                        Showing {result.errorSamples.length} of {result.stats.errors} errors
+                      </Text>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
