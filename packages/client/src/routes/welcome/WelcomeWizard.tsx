@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { checkCLIDependencies, type CLIDependencyStatus } from '../../services/cli-dependencies-api';
-import { CLIDependencyStatus as CLIStatus } from '../../components/shared/cli';
+import { CLIToolStatusCard } from '../../components/shared/cli';
 import { WelcomeHeader } from './components/WelcomeHeader';
 import { ProgressSteps } from './components/ProgressSteps';
 import { CredentialsStep, ConfigStep, DeployStep, SuccessStep } from './steps';
@@ -31,7 +31,7 @@ export function WelcomeWizard() {
     toggleBoth,
   } = useEnvCredentials();
 
-  const { verification, verify, reset: resetVerification } = useCredentialVerification({
+  const { verification, verify } = useCredentialVerification({
     awsCredentials: {
       accessKeyId: credentials.awsAccessKeyId,
       secretAccessKey: credentials.awsSecretAccessKey,
@@ -106,7 +106,7 @@ export function WelcomeWizard() {
 
       {/* CLI Status */}
       <div className="max-w-3xl mx-auto px-6 pb-4">
-        <CLIStatus status={cliDependencies} isLoading={isCheckingCLI} />
+        <CLIToolStatusCard status={cliDependencies} isLoading={isCheckingCLI} />
       </div>
 
       {/* Step Content */}

@@ -69,6 +69,12 @@ export interface InfrastructureStatus {
     kinesis?: string;
     s3?: string;
   };
+  demoApp?: {
+    deployed: boolean;
+    lambda?: string;
+    clientBucket?: string;
+    graphqlEndpoint?: string;
+  };
 }
 
 // API Response types

@@ -1,6 +1,7 @@
 import express from 'express';
 import { getSystemState } from '../lib/state.js';
 import { checkCLIDependencies } from '../lib/cli-dependencies.js';
+import { checkDemoAppDeployed, getDemoAppStatus } from '@orion/demo-app';
 
 const router = express.Router();
 
@@ -51,11 +52,30 @@ router.get('/infrastructure/status', async (_req, res) => {
       }
     }
 
+    // Check demo app status
+    let demoApp = undefined;
+    if (checkDemoAppDeployed()) {
+      try {
+        const demoStatus = await getDemoAppStatus();
+        if (demoStatus.deployed && demoStatus.outputs) {
+          demoApp = {
+            deployed: true,
+            lambda: demoStatus.outputs.lambdaFunctionName,
+            clientBucket: demoStatus.outputs.clientBucket,
+            graphqlEndpoint: demoStatus.outputs.graphqlEndpoint,
+          };
+        }
+      } catch (error) {
+        console.error('Error getting demo app status:', error);
+      }
+    }
+
     res.json({
       status: {
         deployed: terraformStateExists,
         terraformStateExists,
         services: terraformStateExists ? services : undefined,
+        demoApp,
       }
     });
   } catch (error) {

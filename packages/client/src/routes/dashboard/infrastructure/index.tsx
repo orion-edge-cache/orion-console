@@ -86,7 +86,7 @@ function InfrastructurePage() {
 
         <CLIDependenciesCard status={cliDependencies ?? null} isLoading={isCheckingCLI} />
 
-        {deployed && services && <ResourcesGrid services={services} />}
+        {deployed && services && <ResourcesGrid services={services} demoApp={infraData?.status?.demoApp} />}
 
         {deployed && (
           <DangerZone
