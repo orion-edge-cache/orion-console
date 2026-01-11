@@ -285,6 +285,8 @@ function processRecord(data: Uint8Array | undefined): void {
       ...(logEntry.vcl_restarts !== undefined && { vcl_restarts: logEntry.vcl_restarts }),
       ...(logEntry.vcl_backend !== undefined && { vcl_backend: logEntry.vcl_backend }),
       ...(logEntry.vcl_cacheable !== undefined && { vcl_cacheable: logEntry.vcl_cacheable }),
+      // Structured debug data
+      ...(logEntry.data !== undefined && { data: logEntry.data }),
     });
   } catch (error) {
     stats.errors++;

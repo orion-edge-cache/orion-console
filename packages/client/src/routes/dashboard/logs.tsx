@@ -533,6 +533,21 @@ function LogInspector({ log, onClose }: LogInspectorProps) {
             </div>
           ))}
 
+          {/* Debug Data */}
+          {log.data && Object.keys(log.data).length > 0 && (
+            <div className="pt-3 border-t" style={{ borderColor: 'var(--color-border-subtle)' }}>
+              <Text className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>
+                Debug Data
+              </Text>
+              <div
+                className="p-3 rounded-lg overflow-x-auto"
+                style={{ background: 'var(--color-bg-tertiary)' }}
+              >
+                <JsonHighlight data={log.data} className="text-xs" />
+              </div>
+            </div>
+          )}
+
           {/* Raw JSON */}
           <div className="pt-3 border-t" style={{ borderColor: 'var(--color-border-subtle)' }}>
             <Text className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>

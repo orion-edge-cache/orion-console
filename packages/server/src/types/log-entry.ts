@@ -31,4 +31,7 @@ export interface LogEntry {
   vcl_restarts?: number;      // Number of VCL restarts
   vcl_backend?: string;       // Backend service name
   vcl_cacheable?: boolean;    // Whether response is cacheable
+
+  // Structured debug data (from Compute edge logs)
+  data?: Record<string, unknown>;
 }

@@ -73,6 +73,10 @@ export function determineLevel(
   statusCode: number | undefined,
   cacheStatus: string | undefined
 ): LogEntry["level"] {
+  // Respect explicit level from edge
+  if (record.level && ['info', 'warn', 'error', 'debug'].includes(record.level)) {
+    return record.level as LogEntry["level"];
+  }
   if (statusCode && statusCode >= 500) return "error";
   if (statusCode && statusCode >= 400) return "warn";
   // VCL debug logs without cache status are debug level
@@ -176,6 +180,11 @@ export function buildVclDebugMessage(record: RawKinesisRecord): string {
  * Build message for Compute service logs
  */
 export function buildComputeMessage(record: RawKinesisRecord): string {
+  // If message is provided directly, use it
+  if (record.message) {
+    return record.message;
+  }
+
   const opName =
     record.operationName && record.operationName !== "anonymous"
       ? record.operationName
@@ -295,6 +304,9 @@ export function parseKinesisRecord(record: RawKinesisRecord): LogEntry {
   if (vclFields.vcl_restarts !== undefined) result.vcl_restarts = vclFields.vcl_restarts;
   if (vclFields.vcl_backend !== undefined) result.vcl_backend = vclFields.vcl_backend;
   if (vclFields.vcl_cacheable !== undefined) result.vcl_cacheable = vclFields.vcl_cacheable;
+
+  // Add structured debug data if present
+  if (record.data !== undefined) result.data = record.data;
 
   return result;
 }

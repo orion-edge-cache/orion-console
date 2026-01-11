@@ -45,5 +45,10 @@ export interface RawKinesisRecord {
   service?: string;
   duration_ms?: number;
 
+  // Flexible logging fields (for edge debugging)
+  message?: string;
+  data?: Record<string, unknown>;
+  level?: 'info' | 'warn' | 'error' | 'debug';
+
   [key: string]: unknown;
 }
