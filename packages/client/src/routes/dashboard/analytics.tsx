@@ -7,18 +7,19 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
+import type { ObservabilityStatus } from '@orion-console/shared';
 import {
   Activity,
   TrendingUp,
-  Copy,
-  Check,
   Wifi,
   WifiOff,
   Zap,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  Database,
+  Trash2,
 } from 'lucide-react';
 import {
   Badge,
@@ -32,32 +33,43 @@ import {
 } from '@tremor/react';
 import { useMetrics } from '../../context';
 import { HitRateChart, RequestsChart, LatencyChart } from '@/components/MetricsChart';
-import { getConfig, getInfrastructureStatus } from '../../services';
+import { getConfig, getObservabilityStatus, clearAnalytics } from '../../services';
+import { ConfirmDialog } from '../../components/Dialogs';
 
 export const Route = createFileRoute('/dashboard/analytics')({
   component: AnalyticsPage,
 });
 
 function AnalyticsPage() {
-  const [copied, setCopied] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: configData } = useQuery({
     queryKey: ['config'],
     queryFn: getConfig,
-    staleTime: 60000, // Config doesn't change often
+    staleTime: 60000,
   });
 
-  const { data: infraData } = useQuery({
-    queryKey: ['infrastructure-status'],
-    queryFn: getInfrastructureStatus,
-    staleTime: 30000,
+  const { data: observabilityData } = useQuery({
+    queryKey: ['observability-status'],
+    queryFn: getObservabilityStatus,
+    refetchInterval: 5000,
+    staleTime: 5000,
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: clearAnalytics,
+    onSuccess: () => {
+      clearDataPoints();
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['logs'] });
+    },
   });
 
   // Real-time metrics via SSE (shared across all pages)
-  const { metrics, dataPoints, isConnected } = useMetrics();
+  const { metrics, dataPoints, isConnected, clearDataPoints } = useMetrics();
 
   const config = configData?.config;
-  const services = infraData?.status?.services;
 
   // Calculate stats from last 60 seconds (real-time) + total requests (session)
   const aggregatedStats = useMemo(() => {
@@ -127,14 +139,6 @@ function AnalyticsPage() {
     : '--';
   const errorsDisplay = (aggregatedStats.errors4xx || 0) + (aggregatedStats.errors5xx || 0);
 
-  const handleCopyEndpoint = () => {
-    if (services?.cdn) {
-      navigator.clipboard.writeText(`https://${services.cdn}/graphql`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   return (
     <div
       className="h-full overflow-auto animate-fade-in"
@@ -154,40 +158,30 @@ function AnalyticsPage() {
               Real-time cache performance metrics
             </Text>
           </div>
-          <Badge
-            icon={isConnected ? Wifi : WifiOff}
-            color={isConnected ? 'emerald' : 'red'}
-            size="lg"
-          >
-            {isConnected ? 'Live' : 'Disconnected'}
-          </Badge>
+          <Flex className="gap-3">
+            <Button
+              variant="secondary"
+              icon={Trash2}
+              onClick={() => setShowClearConfirm(true)}
+              loading={clearMutation.isPending}
+            >
+              Clear
+            </Button>
+            <Flex className="gap-2">
+              <Badge
+                icon={isConnected ? Wifi : WifiOff}
+                color={isConnected ? 'emerald' : 'red'}
+                size="lg"
+              >
+                {isConnected ? 'Live' : 'Disconnected'}
+              </Badge>
+              <KinesisStatusBadge status={observabilityData?.kinesis} />
+            </Flex>
+          </Flex>
         </Flex>
       </header>
 
       <div className="p-8">
-        {/* Endpoint Banner */}
-        {services?.cdn && (
-          <Card className="mb-6">
-            <Flex justifyContent="between" alignItems="center">
-              <div>
-                <Text className="text-xs font-medium mb-1" style={{ color: 'var(--color-text-tertiary)' }}>
-                  CDN Endpoint
-                </Text>
-                <Text className="text-sm font-mono" style={{ color: 'var(--color-text-secondary)' }}>
-                  https://{services.cdn}/graphql
-                </Text>
-              </div>
-              <Button
-                variant="secondary"
-                icon={copied ? Check : Copy}
-                onClick={handleCopyEndpoint}
-              >
-                {copied ? 'Copied' : 'Copy'}
-              </Button>
-            </Flex>
-          </Card>
-        )}
-
         {/* Stats Row */}
         <Grid numItemsSm={2} numItemsMd={3} numItemsLg={6} className="gap-4 mb-6">
           <StatCard
@@ -267,6 +261,21 @@ function AnalyticsPage() {
           Showing last {dataPoints.length} data points ({Math.floor(dataPoints.length / 60)} minutes of data)
         </Text>
       </div>
+
+      {/* Clear Confirmation Dialog */}
+      {showClearConfirm && (
+        <ConfirmDialog
+          title="Clear Analytics Data?"
+          message="This will delete all logs and metrics from the database. This action cannot be undone."
+          confirmText="Clear Data"
+          confirmColor="red"
+          onConfirm={() => {
+            clearMutation.mutate();
+            setShowClearConfirm(false);
+          }}
+          onCancel={() => setShowClearConfirm(false)}
+        />
+      )}
     </div>
   );
 }
@@ -307,5 +316,51 @@ function StatCard({ label, value, icon, colorVar, subtext }: StatCardProps) {
         </Text>
       )}
     </Card>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   KINESIS STATUS BADGE COMPONENT
+   ───────────────────────────────────────────────────────────────────────────── */
+
+function KinesisStatusBadge({
+  status,
+}: {
+  status?: ObservabilityStatus["kinesis"];
+}) {
+  if (!status) {
+    return (
+      <Badge icon={Database} color="gray" size="lg">
+        Kinesis Unknown
+      </Badge>
+    );
+  }
+
+  if (!status.running) {
+    return (
+      <Badge icon={Database} color="yellow" size="lg">
+        Kinesis Starting...
+      </Badge>
+    );
+  }
+
+  // Check if we've received data recently (within last 60s)
+  const lastRecordAge = status.lastRecordTime
+    ? Date.now() - new Date(status.lastRecordTime).getTime()
+    : null;
+  const isReceivingData = lastRecordAge !== null && lastRecordAge < 60000;
+
+  if (isReceivingData) {
+    return (
+      <Badge icon={Database} color="emerald" size="lg">
+        Kinesis Active
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge icon={Database} color="blue" size="lg">
+      Kinesis Ready
+    </Badge>
   );
 }

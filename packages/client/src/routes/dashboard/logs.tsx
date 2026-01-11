@@ -8,8 +8,11 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef, memo, useCallback } from 'react';
-import { Play, Pause, Trash2, Download, Wifi, WifiOff, X, ChevronRight } from 'lucide-react';
+import { Play, Pause, Trash2, Download, Wifi, WifiOff, X, ChevronRight, Database } from 'lucide-react';
+import type { ObservabilityStatus } from '@orion-console/shared';
+import { getObservabilityStatus } from '../../services';
 import {
   Badge,
   Button,
@@ -33,6 +36,13 @@ const API_BASE = 'http://localhost:3001/api';
 function LogsPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+
+  const { data: observabilityData } = useQuery({
+    queryKey: ['observability-status'],
+    queryFn: getObservabilityStatus,
+    refetchInterval: 5000,
+    staleTime: 5000,
+  });
   const [levelFilter, setLevelFilter] = useState<'all' | 'info' | 'warn' | 'error'>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'cdn' | 'compute' | 'backend' | 'system'>('all');
   const [autoScroll, setAutoScroll] = useState(true);
@@ -175,12 +185,15 @@ function LogsPage() {
               Real-time CDN and compute logs (max {MAX_LOGS})
             </Text>
           </div>
-          <Badge
-            icon={isConnected ? Wifi : WifiOff}
-            color={isConnected ? 'emerald' : 'slate'}
-          >
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </Badge>
+          <Flex className="gap-2">
+            <Badge
+              icon={isConnected ? Wifi : WifiOff}
+              color={isConnected ? 'emerald' : 'slate'}
+            >
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </Badge>
+            <KinesisStatusBadge status={observabilityData?.kinesis} />
+          </Flex>
         </Flex>
 
         {/* Bottom row: Filters and actions */}
@@ -592,4 +605,50 @@ function formatTimestamp(timestamp: number): string {
   } catch {
     return '--:--:--';
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Kinesis Status Badge
+// ═══════════════════════════════════════════════════════════════════════
+
+function KinesisStatusBadge({
+  status,
+}: {
+  status?: ObservabilityStatus["kinesis"];
+}) {
+  if (!status) {
+    return (
+      <Badge icon={Database} color="gray">
+        Kinesis Unknown
+      </Badge>
+    );
+  }
+
+  if (!status.running) {
+    return (
+      <Badge icon={Database} color="yellow">
+        Kinesis Starting...
+      </Badge>
+    );
+  }
+
+  // Check if we've received data recently (within last 60s)
+  const lastRecordAge = status.lastRecordTime
+    ? Date.now() - new Date(status.lastRecordTime).getTime()
+    : null;
+  const isReceivingData = lastRecordAge !== null && lastRecordAge < 60000;
+
+  if (isReceivingData) {
+    return (
+      <Badge icon={Database} color="emerald">
+        Kinesis Active
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge icon={Database} color="blue">
+      Kinesis Ready
+    </Badge>
+  );
 }

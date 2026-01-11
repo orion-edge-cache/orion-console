@@ -27,6 +27,21 @@ export type { SystemEvent } from './events.js';
 // Export cleanup (also auto-starts scheduler on import)
 export { cleanup, startCleanupScheduler } from './cleanup.js';
 
+// ═══════════════════════════════════════════════════════════════════════
+// Clear Analytics
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Clear all analytics data (logs and metrics)
+ */
+export function clearAnalytics(): void {
+  db.exec(`
+    DELETE FROM logs;
+    DELETE FROM metrics_1s;
+    DELETE FROM metrics_1m;
+  `);
+}
+
 // Default export is the db instance
 import { db } from './schema.js';
 export default db;

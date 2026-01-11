@@ -45,3 +45,14 @@ export async function stopKinesisConsumer(): Promise<{ success: boolean }> {
 
   return response.json();
 }
+
+/**
+ * Clear all analytics data (logs and metrics)
+ */
+export async function clearAnalytics(): Promise<{ success: boolean }> {
+  const response = await fetch(`${API_BASE_URL}/observability/analytics/clear`, {
+    method: "POST",
+  });
+
+  return response.json();
+}

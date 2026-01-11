@@ -4,6 +4,7 @@ import {
   getAggregatedMetrics,
   getTimeSeries,
   getEvents,
+  clearAnalytics,
 } from '../db/index.js';
 import {
   startConsumer as startKinesisConsumer,
@@ -133,6 +134,18 @@ router.post('/observability/kinesis/stop', async (_req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Error stopping Kinesis consumer:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/observability/analytics/clear', async (_req, res) => {
+  try {
+    clearAnalytics();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error clearing analytics:', error);
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Unknown error'
     });

@@ -193,3 +193,20 @@ export interface DestroyPlan {
   resources: InfrastructureResource[];
   warning: string;
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Observability Types
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface ObservabilityStatus {
+  kinesis: {
+    running: boolean;
+    recordsProcessed: number;
+    errors: number;
+    lastPollTime: string | null;
+    lastRecordTime: string | null;
+  };
+  sse: {
+    subscribers: number;
+  };
+}
