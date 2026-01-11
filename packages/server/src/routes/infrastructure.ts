@@ -5,6 +5,7 @@ import {
   destroyInfrastructure,
   getTerraformOutputs,
   cleanupAfterDestroy,
+  resetConfigToDefaults,
   type DeployConfig,
   type DestroyConfig,
   type ProgressEvent,
@@ -152,6 +153,8 @@ router.post("/infrastructure/deploy", async (req, res) => {
     })
       .then(async () => {
         await releaseLock();
+        // Reset config.json to defaults for fresh deployment
+        resetConfigToDefaults();
         // Fire-and-forget: start Kinesis consumer for new infrastructure
         handleInfrastructureDeployed();
         await handleSSESuccess(res, "Deployment complete!");

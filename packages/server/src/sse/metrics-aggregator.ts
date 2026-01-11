@@ -20,6 +20,8 @@ let currentMetrics = {
   errors4xx: 0,
   errors5xx: 0,
   sumLatency: 0,
+  sumHitLatency: 0,
+  sumMissLatency: 0,
 };
 
 /**
@@ -39,6 +41,9 @@ export function recordRequest(data: {
       const hitRate = (currentMetrics.hits + currentMetrics.misses) > 0
         ? currentMetrics.hits / (currentMetrics.hits + currentMetrics.misses)
         : 0;
+      const avgLatency = currentMetrics.sumLatency / currentMetrics.requests;
+      const hitAvgLatency = currentMetrics.hits > 0 ? currentMetrics.sumHitLatency / currentMetrics.hits : 0;
+      const missAvgLatency = currentMetrics.misses > 0 ? currentMetrics.sumMissLatency / currentMetrics.misses : 0;
 
       broadcastDataPoint({
         time: currentBucket * 1000,
@@ -49,14 +54,18 @@ export function recordRequest(data: {
         errors4xx: currentMetrics.errors4xx,
         errors5xx: currentMetrics.errors5xx,
         hitRate,
-        avgLatency: currentMetrics.sumLatency / currentMetrics.requests,
+        avgLatency,
+        hitAvgLatency,
+        missAvgLatency,
       });
 
       // Also push aggregated metrics
       broadcastMetrics({
         hitRate,
         requestsPerSecond: currentMetrics.requests,
-        avgLatency: currentMetrics.sumLatency / currentMetrics.requests,
+        avgLatency,
+        hitAvgLatency,
+        missAvgLatency,
         totalRequests: currentMetrics.requests,
         cacheHits: currentMetrics.hits,
         cacheMisses: currentMetrics.misses,
@@ -73,6 +82,8 @@ export function recordRequest(data: {
       errors4xx: 0,
       errors5xx: 0,
       sumLatency: 0,
+      sumHitLatency: 0,
+      sumMissLatency: 0,
     };
   }
 
@@ -81,14 +92,21 @@ export function recordRequest(data: {
 
   // Handle variants like HIT-CLUSTER, MISS-CLUSTER, etc.
   const status = data.cache_status?.toUpperCase() || '';
-  if (status.startsWith('HIT')) currentMetrics.hits++;
-  else if (status.startsWith('MISS')) currentMetrics.misses++;
+  const isHit = status.startsWith('HIT');
+  const isMiss = status.startsWith('MISS');
+
+  if (isHit) currentMetrics.hits++;
+  else if (isMiss) currentMetrics.misses++;
   else if (status.startsWith('PASS') || status === 'SYNTH') currentMetrics.passes++;
 
   if (data.status_code && data.status_code >= 400 && data.status_code < 500) currentMetrics.errors4xx++;
   if (data.status_code && data.status_code >= 500) currentMetrics.errors5xx++;
 
-  if (data.latency_ms) currentMetrics.sumLatency += data.latency_ms;
+  if (data.latency_ms) {
+    currentMetrics.sumLatency += data.latency_ms;
+    if (isHit) currentMetrics.sumHitLatency += data.latency_ms;
+    if (isMiss) currentMetrics.sumMissLatency += data.latency_ms;
+  }
 }
 
 // Broadcast data points every second when there's traffic (for live charts)
@@ -101,6 +119,8 @@ setInterval(() => {
         ? currentMetrics.hits / (currentMetrics.hits + currentMetrics.misses)
         : 0;
       const avgLatency = currentMetrics.sumLatency / currentMetrics.requests;
+      const hitAvgLatency = currentMetrics.hits > 0 ? currentMetrics.sumHitLatency / currentMetrics.hits : 0;
+      const missAvgLatency = currentMetrics.misses > 0 ? currentMetrics.sumMissLatency / currentMetrics.misses : 0;
 
       // Push data point for charts (only real data, not zeros)
       broadcastDataPoint({
@@ -113,6 +133,8 @@ setInterval(() => {
         errors5xx: currentMetrics.errors5xx,
         hitRate,
         avgLatency,
+        hitAvgLatency,
+        missAvgLatency,
       });
     }
 
@@ -126,6 +148,8 @@ setInterval(() => {
       errors4xx: 0,
       errors5xx: 0,
       sumLatency: 0,
+      sumHitLatency: 0,
+      sumMissLatency: 0,
     };
   }
 }, 1000);

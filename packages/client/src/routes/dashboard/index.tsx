@@ -199,11 +199,11 @@ function DashboardOverview() {
         <StatCard
           icon={<Clock className="w-5 h-5" />}
           iconColor="text-blue-500"
-          label="Avg Latency"
+          label="Latency"
           value={
             stats.avgLatency != null ? `${stats.avgLatency.toFixed(0)}ms` : "--"
           }
-          description="Response time"
+          description={`Hit: ${stats.hitAvgLatency != null ? `${stats.hitAvgLatency.toFixed(0)}ms` : '--'} | Miss: ${stats.missAvgLatency != null ? `${stats.missAvgLatency.toFixed(0)}ms` : '--'}`}
         />
         <StatCard
           icon={<Zap className="w-5 h-5" />}

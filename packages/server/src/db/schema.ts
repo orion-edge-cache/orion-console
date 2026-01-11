@@ -62,6 +62,8 @@ db.exec(`
     errors_4xx INTEGER DEFAULT 0,
     errors_5xx INTEGER DEFAULT 0,
     sum_latency_ms REAL DEFAULT 0,
+    sum_hit_latency_ms REAL DEFAULT 0,
+    sum_miss_latency_ms REAL DEFAULT 0,
     min_latency_ms REAL,
     max_latency_ms REAL,
 
@@ -79,6 +81,8 @@ db.exec(`
     errors_4xx INTEGER DEFAULT 0,
     errors_5xx INTEGER DEFAULT 0,
     sum_latency_ms REAL DEFAULT 0,
+    sum_hit_latency_ms REAL DEFAULT 0,
+    sum_miss_latency_ms REAL DEFAULT 0,
     min_latency_ms REAL,
     max_latency_ms REAL,
     p50_latency_ms REAL,

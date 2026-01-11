@@ -87,6 +87,8 @@ function AnalyticsPage() {
         overallHitRate: null,
         requestsPerSec: 0,
         avgLatency: null,
+        hitAvgLatency: null,
+        missAvgLatency: null,
         totalRequests,
         errors4xx: 0,
         errors5xx: 0,
@@ -98,6 +100,8 @@ function AnalyticsPage() {
     const recentMisses = recentPoints.reduce((sum, p) => sum + p.misses, 0);
     const recentPasses = recentPoints.reduce((sum, p) => sum + (p.passes || 0), 0);
     const recentLatency = recentPoints.reduce((sum, p) => sum + (p.avgLatency * p.requests), 0);
+    const recentHitLatency = recentPoints.reduce((sum, p) => sum + ((p.hitAvgLatency || 0) * p.hits), 0);
+    const recentMissLatency = recentPoints.reduce((sum, p) => sum + ((p.missAvgLatency || 0) * p.misses), 0);
     const recentSeconds = Math.max(recentPoints.length, 1);
 
     // Cache hit rate: hits / (hits + misses) - effectiveness for cacheable requests
@@ -115,6 +119,8 @@ function AnalyticsPage() {
       overallHitRate,
       requestsPerSec: recentRequests > 0 ? recentRequests / recentSeconds : 0,
       avgLatency: recentRequests > 0 ? recentLatency / recentRequests : null,
+      hitAvgLatency: recentHits > 0 ? recentHitLatency / recentHits : null,
+      missAvgLatency: recentMisses > 0 ? recentMissLatency / recentMisses : null,
       totalRequests,
       errors4xx,
       errors5xx,
@@ -209,6 +215,7 @@ function AnalyticsPage() {
             value={avgLatencyDisplay}
             icon={<Zap className="w-4 h-4" />}
             colorVar="#a855f7"
+            subtext={`Hit: ${aggregatedStats.hitAvgLatency != null ? `${aggregatedStats.hitAvgLatency.toFixed(0)}ms` : '--'} | Miss: ${aggregatedStats.missAvgLatency != null ? `${aggregatedStats.missAvgLatency.toFixed(0)}ms` : '--'}`}
           />
           <StatCard
             label="Total Requests"

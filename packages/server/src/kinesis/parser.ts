@@ -5,8 +5,8 @@
  * Handles VCL debug logs, request completion logs, and Compute service logs.
  */
 
-import type { LogEntry } from '../types/log-entry.js';
-import type { RawKinesisRecord } from './types.js';
+import type { LogEntry } from "../types/log-entry.js";
+import type { RawKinesisRecord } from "./types.js";
 
 // ═══════════════════════════════════════════════════════════════════════
 // Parsing Helper Functions
@@ -40,7 +40,9 @@ export function detectSource(record: RawKinesisRecord): LogEntry["source"] {
 /**
  * Extract cache status from record
  */
-export function extractCacheStatus(record: RawKinesisRecord): string | undefined {
+export function extractCacheStatus(
+  record: RawKinesisRecord,
+): string | undefined {
   if (record.response_state) {
     return record.response_state.toUpperCase();
   }
@@ -56,7 +58,9 @@ export function extractCacheStatus(record: RawKinesisRecord): string | undefined
 /**
  * Extract status code from record
  */
-export function extractStatusCode(record: RawKinesisRecord): number | undefined {
+export function extractStatusCode(
+  record: RawKinesisRecord,
+): number | undefined {
   const raw = record.response_status ?? record.Status;
   if (raw !== undefined) {
     const parsed = typeof raw === "number" ? raw : parseInt(String(raw), 10);
@@ -71,16 +75,28 @@ export function extractStatusCode(record: RawKinesisRecord): number | undefined 
 export function determineLevel(
   record: RawKinesisRecord,
   statusCode: number | undefined,
-  cacheStatus: string | undefined
+  cacheStatus: string | undefined,
 ): LogEntry["level"] {
-  // Respect explicit level from edge
-  if (record.level && ['info', 'warn', 'error', 'debug'].includes(record.level)) {
+  // 1. Respect explicit level from VCL or Compute (highest priority)
+  if (
+    record.level &&
+    ["info", "warn", "error", "debug"].includes(record.level)
+  ) {
     return record.level as LogEntry["level"];
   }
+
+  // 2. Status code based levels
   if (statusCode && statusCode >= 500) return "error";
   if (statusCode && statusCode >= 400) return "warn";
-  // VCL debug logs without cache status are debug level
+
+  // 3. Compute event-based levels (when event implies a level)
+  if (record.event === "error") return "error";
+  if (record.event === "debug") return "debug";
+
+  // 4. VCL debug logs (has Subroutine but no cache status = debug step)
   if (record.Subroutine && !cacheStatus) return "debug";
+
+  // 5. Default to info for everything else
   return "info";
 }
 
@@ -145,7 +161,7 @@ export function buildRequestCompletionMessage(
   method: string | undefined,
   url: string | undefined,
   statusCode: number | undefined,
-  latencyMs: number | undefined
+  latencyMs: number | undefined,
 ): string {
   let message = `[${cacheStatus || "REQUEST"}] ${method || "GET"} ${url || "/graphql"} → ${statusCode || 200}`;
   if (latencyMs) message += ` (${latencyMs.toFixed(1)}ms)`;
@@ -160,18 +176,23 @@ export function buildVclDebugMessage(record: RawKinesisRecord): string {
   const lines: string[] = [`== ${subroutine} ==`];
 
   if (record.Title) lines.push(`  Title: "${record.Title}"`);
-  if (record["CDN Version"]) lines.push(`  CDN Version: "${record["CDN Version"]}"`);
+  if (record["CDN Version"])
+    lines.push(`  CDN Version: "${record["CDN Version"]}"`);
   if (record.Step) lines.push(`  Step: "${record.Step}"`);
   if (record.Timestamp) lines.push(`  Timestamp: "${record.Timestamp}"`);
   if (record.Host) lines.push(`  Host: "${record.Host}"`);
-  if (record["X-GraphQL-Query"]) lines.push(`  X-GraphQL-Query: "${record["X-GraphQL-Query"]}"`);
-  if (record.Path || record.PATH) lines.push(`  Path: "${record.Path || record.PATH}"`);
+  if (record["X-GraphQL-Query"])
+    lines.push(`  X-GraphQL-Query: "${record["X-GraphQL-Query"]}"`);
+  if (record.Path || record.PATH)
+    lines.push(`  Path: "${record.Path || record.PATH}"`);
   if (record.Method) lines.push(`  Method: "${record.Method}"`);
   if (record.Body) lines.push(`  Body: "${record.Body}"`);
   if (record.Backend) lines.push(`  Backend: "${record.Backend}"`);
-  if (record.Cacheable !== undefined) lines.push(`  Cacheable: "${record.Cacheable}"`);
+  if (record.Cacheable !== undefined)
+    lines.push(`  Cacheable: "${record.Cacheable}"`);
   if (record.Status) lines.push(`  Status: "${record.Status}"`);
-  if (record.Restarts !== undefined) lines.push(`  Restarts: "${record.Restarts}"`);
+  if (record.Restarts !== undefined)
+    lines.push(`  Restarts: "${record.Restarts}"`);
 
   return lines.join("\n");
 }
@@ -218,7 +239,7 @@ export function buildMessage(
   record: RawKinesisRecord,
   cacheStatus: string | undefined,
   statusCode: number | undefined,
-  latencyMs: number | undefined
+  latencyMs: number | undefined,
 ): string {
   // Request completion log (has response_state)
   if (record.response_state) {
@@ -227,7 +248,7 @@ export function buildMessage(
       record.request_method || record.Method,
       record.url || record.Path,
       statusCode,
-      latencyMs
+      latencyMs,
     );
   }
 
@@ -270,9 +291,10 @@ export function parseKinesisRecord(record: RawKinesisRecord): LogEntry {
   const requestMethod = record.request_method || record.Method;
   const url = record.url || record.Path || record.PATH;
   const operationType = record.operationType;
-  const operationName = record.operationName && record.operationName !== "anonymous"
-    ? record.operationName
-    : undefined;
+  const operationName =
+    record.operationName && record.operationName !== "anonymous"
+      ? record.operationName
+      : undefined;
 
   // Build result with only defined optional properties (for exactOptionalPropertyTypes)
   const result: LogEntry = {
@@ -293,17 +315,23 @@ export function parseKinesisRecord(record: RawKinesisRecord): LogEntry {
   if (operationName !== undefined) result.operation_name = operationName;
 
   // Add VCL fields only if defined
-  if (vclFields.vcl_subroutine !== undefined) result.vcl_subroutine = vclFields.vcl_subroutine;
+  if (vclFields.vcl_subroutine !== undefined)
+    result.vcl_subroutine = vclFields.vcl_subroutine;
   if (vclFields.vcl_title !== undefined) result.vcl_title = vclFields.vcl_title;
   if (vclFields.vcl_step !== undefined) result.vcl_step = vclFields.vcl_step;
-  if (vclFields.vcl_version !== undefined) result.vcl_version = vclFields.vcl_version;
+  if (vclFields.vcl_version !== undefined)
+    result.vcl_version = vclFields.vcl_version;
   if (vclFields.vcl_host !== undefined) result.vcl_host = vclFields.vcl_host;
   if (vclFields.vcl_path !== undefined) result.vcl_path = vclFields.vcl_path;
   if (vclFields.vcl_body !== undefined) result.vcl_body = vclFields.vcl_body;
-  if (vclFields.vcl_graphql_query !== undefined) result.vcl_graphql_query = vclFields.vcl_graphql_query;
-  if (vclFields.vcl_restarts !== undefined) result.vcl_restarts = vclFields.vcl_restarts;
-  if (vclFields.vcl_backend !== undefined) result.vcl_backend = vclFields.vcl_backend;
-  if (vclFields.vcl_cacheable !== undefined) result.vcl_cacheable = vclFields.vcl_cacheable;
+  if (vclFields.vcl_graphql_query !== undefined)
+    result.vcl_graphql_query = vclFields.vcl_graphql_query;
+  if (vclFields.vcl_restarts !== undefined)
+    result.vcl_restarts = vclFields.vcl_restarts;
+  if (vclFields.vcl_backend !== undefined)
+    result.vcl_backend = vclFields.vcl_backend;
+  if (vclFields.vcl_cacheable !== undefined)
+    result.vcl_cacheable = vclFields.vcl_cacheable;
 
   // Add structured debug data if present
   if (record.data !== undefined) result.data = record.data;

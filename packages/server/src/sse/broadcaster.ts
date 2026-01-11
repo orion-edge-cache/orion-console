@@ -171,6 +171,8 @@ export function broadcastMetrics(metrics: {
   hitRate: number;
   requestsPerSecond: number;
   avgLatency: number;
+  hitAvgLatency: number;
+  missAvgLatency: number;
   totalRequests: number;
   cacheHits: number;
   cacheMisses: number;
@@ -205,6 +207,8 @@ export function broadcastDataPoint(point: {
   errors5xx: number;
   hitRate: number;
   avgLatency: number;
+  hitAvgLatency: number;
+  missAvgLatency: number;
 }): void {
   broadcast('metrics', 'datapoint', point);
 }

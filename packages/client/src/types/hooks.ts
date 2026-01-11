@@ -14,12 +14,16 @@ export interface DataPoint {
   errors5xx: number;
   hitRate: number;
   avgLatency: number;
+  hitAvgLatency: number;
+  missAvgLatency: number;
 }
 
 export interface MetricsUpdate {
   hitRate: number;
   requestsPerSecond: number;
   avgLatency: number;
+  hitAvgLatency: number;
+  missAvgLatency: number;
   totalRequests: number;
   cacheHits: number;
   cacheMisses: number;

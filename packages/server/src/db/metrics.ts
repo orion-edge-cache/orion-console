@@ -14,10 +14,12 @@ export type { MetricsBucket };
 const upsertMetrics1sStmt = db.prepare(`
   INSERT INTO metrics_1s (
     bucket, total_requests, cache_hits, cache_misses, cache_passes,
-    errors_4xx, errors_5xx, sum_latency_ms, min_latency_ms, max_latency_ms, latencies_json
+    errors_4xx, errors_5xx, sum_latency_ms, sum_hit_latency_ms, sum_miss_latency_ms,
+    min_latency_ms, max_latency_ms, latencies_json
   ) VALUES (
     @bucket, @total_requests, @cache_hits, @cache_misses, @cache_passes,
-    @errors_4xx, @errors_5xx, @sum_latency_ms, @min_latency_ms, @max_latency_ms, @latencies_json
+    @errors_4xx, @errors_5xx, @sum_latency_ms, @sum_hit_latency_ms, @sum_miss_latency_ms,
+    @min_latency_ms, @max_latency_ms, @latencies_json
   )
   ON CONFLICT(bucket) DO UPDATE SET
     total_requests = total_requests + @total_requests,
@@ -27,6 +29,8 @@ const upsertMetrics1sStmt = db.prepare(`
     errors_4xx = errors_4xx + @errors_4xx,
     errors_5xx = errors_5xx + @errors_5xx,
     sum_latency_ms = sum_latency_ms + @sum_latency_ms,
+    sum_hit_latency_ms = sum_hit_latency_ms + @sum_hit_latency_ms,
+    sum_miss_latency_ms = sum_miss_latency_ms + @sum_miss_latency_ms,
     min_latency_ms = CASE WHEN @min_latency_ms < min_latency_ms OR min_latency_ms IS NULL THEN @min_latency_ms ELSE min_latency_ms END,
     max_latency_ms = CASE WHEN @max_latency_ms > max_latency_ms OR max_latency_ms IS NULL THEN @max_latency_ms ELSE max_latency_ms END,
     latencies_json = json_insert(latencies_json, '$[#]', @latency_single)
@@ -46,6 +50,8 @@ export function updateMetricsBucket(log: LogEntry): void {
   const is4xx = log.status_code && log.status_code >= 400 && log.status_code < 500;
   const is5xx = log.status_code && log.status_code >= 500;
 
+  const latency = log.latency_ms || 0;
+
   try {
     upsertMetrics1sStmt.run({
       bucket,
@@ -55,11 +61,13 @@ export function updateMetricsBucket(log: LogEntry): void {
       cache_passes: isPass ? 1 : 0,
       errors_4xx: is4xx ? 1 : 0,
       errors_5xx: is5xx ? 1 : 0,
-      sum_latency_ms: log.latency_ms || 0,
+      sum_latency_ms: latency,
+      sum_hit_latency_ms: isHit ? latency : 0,
+      sum_miss_latency_ms: isMiss ? latency : 0,
       min_latency_ms: log.latency_ms || null,
       max_latency_ms: log.latency_ms || null,
       latencies_json: '[]',
-      latency_single: log.latency_ms || 0,
+      latency_single: latency,
     });
   } catch {
     // Fallback: simple insert without JSON update
@@ -112,6 +120,8 @@ export function getAggregatedMetrics(since: number, until: number = Math.floor(D
   cacheMisses: number;
   hitRate: number;
   avgLatency: number;
+  hitAvgLatency: number;
+  missAvgLatency: number;
   requestsPerSecond: number;
 } {
   const result = db.prepare(`
@@ -120,6 +130,8 @@ export function getAggregatedMetrics(since: number, until: number = Math.floor(D
       SUM(cache_hits) as cache_hits,
       SUM(cache_misses) as cache_misses,
       SUM(sum_latency_ms) as sum_latency,
+      SUM(sum_hit_latency_ms) as sum_hit_latency,
+      SUM(sum_miss_latency_ms) as sum_miss_latency,
       MIN(bucket) as min_bucket,
       MAX(bucket) as max_bucket
     FROM metrics_1s
@@ -130,6 +142,8 @@ export function getAggregatedMetrics(since: number, until: number = Math.floor(D
   const cacheHits = result?.cache_hits || 0;
   const cacheMisses = result?.cache_misses || 0;
   const sumLatency = result?.sum_latency || 0;
+  const sumHitLatency = result?.sum_hit_latency || 0;
+  const sumMissLatency = result?.sum_miss_latency || 0;
   const duration = result?.max_bucket && result?.min_bucket
     ? Math.max(result.max_bucket - result.min_bucket, 1)
     : 1;
@@ -140,6 +154,8 @@ export function getAggregatedMetrics(since: number, until: number = Math.floor(D
     cacheMisses,
     hitRate: totalRequests > 0 ? cacheHits / (cacheHits + cacheMisses) : 0,
     avgLatency: totalRequests > 0 ? sumLatency / totalRequests : 0,
+    hitAvgLatency: cacheHits > 0 ? sumHitLatency / cacheHits : 0,
+    missAvgLatency: cacheMisses > 0 ? sumMissLatency / cacheMisses : 0,
     requestsPerSecond: totalRequests / duration,
   };
 }
@@ -161,6 +177,8 @@ export function getTimeSeries(
   errors5xx: number;
   hitRate: number;
   avgLatency: number;
+  hitAvgLatency: number;
+  missAvgLatency: number;
 }> {
   const rows = db.prepare(`
     SELECT
@@ -171,7 +189,9 @@ export function getTimeSeries(
       SUM(cache_passes) as passes,
       SUM(errors_4xx) as errors_4xx,
       SUM(errors_5xx) as errors_5xx,
-      SUM(sum_latency_ms) as sum_latency
+      SUM(sum_latency_ms) as sum_latency,
+      SUM(sum_hit_latency_ms) as sum_hit_latency,
+      SUM(sum_miss_latency_ms) as sum_miss_latency
     FROM metrics_1s
     WHERE bucket >= ? AND bucket <= ?
     GROUP BY time_bucket
@@ -188,5 +208,7 @@ export function getTimeSeries(
     errors5xx: row.errors_5xx || 0,
     hitRate: (row.hits + row.misses) > 0 ? (row.hits || 0) / (row.hits + row.misses) : 0,
     avgLatency: row.requests > 0 ? (row.sum_latency || 0) / row.requests : 0,
+    hitAvgLatency: row.hits > 0 ? (row.sum_hit_latency || 0) / row.hits : 0,
+    missAvgLatency: row.misses > 0 ? (row.sum_miss_latency || 0) / row.misses : 0,
   }));
 }
