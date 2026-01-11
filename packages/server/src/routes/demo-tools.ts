@@ -42,7 +42,7 @@ router.post("/demo-tools/cache-tests", async (_req, res) => {
  */
 router.post("/demo-tools/analytics", async (req, res) => {
   try {
-    const { requestCount = 1000 } = req.body as { requestCount?: number };
+    const { requestCount = 100 } = req.body as { requestCount?: number };
 
     // Validate request count
     if (typeof requestCount !== "number" || requestCount < 1) {

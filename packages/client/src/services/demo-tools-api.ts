@@ -110,7 +110,7 @@ export async function runCacheTests(): Promise<CacheTestsResponse> {
  * Run analytics generator
  */
 export async function runAnalyticsGenerator(
-  requestCount: number = 1000,
+  requestCount: number = 100,
 ): Promise<AnalyticsResponse> {
   const response = await fetch(`${API_BASE_URL}/demo-tools/analytics`, {
     method: "POST",

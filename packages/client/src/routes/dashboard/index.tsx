@@ -268,7 +268,7 @@ function DashboardOverview() {
               onClick={() => demoActions.handleDemoAction("generate-traffic")}
               loading={demoActions.analyticsMutation.isPending}
               tooltip={[
-                "Sends ~1000 sample GraphQL requests to the edge cache",
+                "Sends ~100 sample GraphQL requests to the edge cache",
                 "Mix of queries and mutations",
                 "Populates the analytics dashboard with real data",
                 "Shows cache hit rate, latency comparisons, and performance metrics",

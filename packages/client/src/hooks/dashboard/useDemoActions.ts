@@ -28,7 +28,7 @@ export function useDemoActions(onError?: (message: string) => void) {
   });
 
   const analyticsMutation = useMutation({
-    mutationFn: () => runAnalyticsGenerator(20),
+    mutationFn: () => runAnalyticsGenerator(100),
     onSuccess: (data) => {
       if (data.result) {
         setAnalyticsResult(data.result);
