@@ -114,41 +114,26 @@ router.get("/schema/credentials/status", async (_req, res) => {
   try {
     const credentials = await getSavedCredentials();
 
-    // Build status object - handle undefined masked values properly
-    const anthropicMasked = credentials?.ai?.anthropic
-      ? maskAPIKey(credentials.ai.anthropic)
-      : null;
-    const openaiMasked = credentials?.ai?.openai
-      ? maskAPIKey(credentials.ai.openai)
-      : null;
-    const geminiMasked = credentials?.ai?.gemini
-      ? maskAPIKey(credentials.ai.gemini)
-      : null;
-    const grokMasked = credentials?.ai?.grok
-      ? maskAPIKey(credentials.ai.grok)
-      : null;
+    const buildStatus = (provider: AIProvider) => {
+      const savedKey = credentials?.ai?.[provider] || null;
+      const envKey = getAIKeyFromEnv(provider);
+
+      const savedMasked = savedKey ? maskAPIKey(savedKey) : null;
+      const envMasked = envKey ? maskAPIKey(envKey) : null;
+
+      return {
+        saved: !!savedKey,
+        env: !!envKey,
+        ...(savedMasked && { savedMasked, masked: savedMasked }),
+        ...(envMasked && { envMasked }),
+      };
+    };
 
     const status = {
-      anthropic: {
-        saved: !!credentials?.ai?.anthropic,
-        env: !!getAIKeyFromEnv("anthropic"),
-        ...(anthropicMasked && { masked: anthropicMasked }),
-      },
-      openai: {
-        saved: !!credentials?.ai?.openai,
-        env: !!getAIKeyFromEnv("openai"),
-        ...(openaiMasked && { masked: openaiMasked }),
-      },
-      gemini: {
-        saved: !!credentials?.ai?.gemini,
-        env: !!getAIKeyFromEnv("gemini"),
-        ...(geminiMasked && { masked: geminiMasked }),
-      },
-      grok: {
-        saved: !!credentials?.ai?.grok,
-        env: !!getAIKeyFromEnv("grok"),
-        ...(grokMasked && { masked: grokMasked }),
-      },
+      anthropic: buildStatus("anthropic"),
+      openai: buildStatus("openai"),
+      gemini: buildStatus("gemini"),
+      grok: buildStatus("grok"),
     };
 
     res.json(status);
@@ -156,6 +141,65 @@ router.get("/schema/credentials/status", async (_req, res) => {
     console.error("Credentials status error:", error);
     res.status(500).json({
       error: "Failed to check credentials",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * POST /api/schema/credentials/resolve
+ *
+ * Resolve an API key from a specific source
+ */
+router.post("/schema/credentials/resolve", async (req, res) => {
+  try {
+    const { provider, source } = req.body as {
+      provider?: AIProvider;
+      source?: "env" | "saved";
+    };
+
+    if (!provider || !source) {
+      return res.status(400).json({
+        error: "Provider and source are required",
+      });
+    }
+
+    const validProviders = getSupportedProviders();
+    if (!validProviders.includes(provider)) {
+      return res.status(400).json({
+        error: "Invalid provider",
+        message: `Provider must be one of: ${validProviders.join(", ")}`,
+      });
+    }
+
+    if (source !== "env" && source !== "saved") {
+      return res.status(400).json({
+        error: "Invalid source",
+        message: "Source must be 'env' or 'saved'",
+      });
+    }
+
+    const apiKey =
+      source === "saved"
+        ? await getAIKeyFromCredentials(provider)
+        : getAIKeyFromEnv(provider);
+
+    if (!apiKey) {
+      return res.status(404).json({
+        error: "API key not found",
+        message: `No ${source} key found for ${provider}`,
+      });
+    }
+
+    res.json({
+      key: apiKey,
+      source,
+      masked: maskAPIKey(apiKey),
+    });
+  } catch (error) {
+    console.error("Credentials resolve error:", error);
+    res.status(500).json({
+      error: "Failed to resolve credentials",
       message: error instanceof Error ? error.message : "Unknown error",
     });
   }
@@ -305,7 +349,8 @@ router.post("/schema/analyze", async (req, res) => {
     }
 
     // Test endpoint reachability
-    const { reachable, error: reachError } = await testEndpointReachability(endpoint);
+    const { reachable, error: reachError } =
+      await testEndpointReachability(endpoint);
     if (!reachable) {
       return res.status(400).json({
         error: "Endpoint unreachable",
