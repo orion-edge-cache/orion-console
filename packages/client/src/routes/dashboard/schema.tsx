@@ -49,6 +49,7 @@ import {
   generateBasicConfig,
   getProviders,
   getAICredentialsStatus,
+  resolveAICredentials,
   saveAICredentials,
   saveConfig,
   type SchemaAnalysis,
@@ -68,8 +69,10 @@ function SchemaPage() {
   const [endpoint, setEndpoint] = useState<string>("");
   const [endpointSource, setEndpointSource] = useState<string>("");
   const [selectedProvider, setSelectedProvider] = useState<string>("");
-  const [apiKey, setApiKey] = useState<string>("");
-  const [saveApiKey, setSaveApiKey] = useState<boolean>(true);
+  const [useStoredKey, setUseStoredKey] = useState<"saved" | "env" | null>(null);
+  const [customApiKey, setCustomApiKey] = useState<string>("");
+  const [resolvedApiKey, setResolvedApiKey] = useState<string>("");
+  const [resolvedKeyMasked, setResolvedKeyMasked] = useState<string>("");
   const [useBasicMode, setUseBasicMode] = useState<boolean>(false);
   const [generatedConfig, setGeneratedConfig] = useState<OrionCacheConfig | null>(null);
   const [aiResponse, setAiResponse] = useState<AIConfigResponse | null>(null);
@@ -102,6 +105,53 @@ function SchemaPage() {
     }
   }, [endpointData]);
 
+  useEffect(() => {
+    if (!selectedProvider || !credentialsData) {
+      setUseStoredKey(null);
+      setResolvedApiKey("");
+      setResolvedKeyMasked("");
+      return;
+    }
+
+    const status = credentialsData[
+      selectedProvider as keyof AICredentialsStatusResponse
+    ];
+
+    // Auto-check the first available source
+    if (status?.saved) {
+      setUseStoredKey("saved");
+    } else if (status?.env) {
+      setUseStoredKey("env");
+    } else {
+      setUseStoredKey(null);
+    }
+
+    setCustomApiKey("");
+  }, [selectedProvider, credentialsData]);
+
+  useEffect(() => {
+    const resolveKey = async () => {
+      if (!selectedProvider || !useStoredKey) {
+        setResolvedApiKey("");
+        setResolvedKeyMasked("");
+        return;
+      }
+
+      try {
+        const resolved = await resolveAICredentials(selectedProvider, useStoredKey);
+        setResolvedApiKey(resolved.key);
+        setResolvedKeyMasked(resolved.masked);
+      } catch {
+        setResolvedApiKey("");
+        setResolvedKeyMasked("");
+      }
+    };
+
+    void resolveKey();
+  }, [selectedProvider, useStoredKey]);
+
+  const activeApiKey = useStoredKey ? resolvedApiKey : customApiKey;
+
   // Mutations
   const analyzeMutation = useMutation({
     mutationFn: () => analyzeSchema(endpoint),
@@ -116,20 +166,22 @@ function SchemaPage() {
         return generateBasicConfig(endpoint);
       }
 
-      // Save API key if requested
-      if (saveApiKey && apiKey && selectedProvider) {
-        await saveAICredentials(selectedProvider, apiKey);
+      if (!selectedProvider) {
+        throw new Error("Select an AI provider to continue");
+      }
+
+      // If using manual entry, save to config file
+      if (!useStoredKey && customApiKey) {
+        await saveAICredentials(selectedProvider, customApiKey);
         refetchCredentials();
       }
 
       return generateConfig({
         endpoint,
-        aiProvider: selectedProvider
-          ? {
-              provider: selectedProvider,
-              apiKey: apiKey || undefined,
-            }
-          : undefined,
+        aiProvider: {
+          provider: selectedProvider,
+          apiKey: activeApiKey || undefined,
+        },
         useBasic: false,
       });
     },
@@ -178,6 +230,15 @@ function SchemaPage() {
     const status = credentialsData[providerId as keyof AICredentialsStatusResponse];
     return status?.saved || status?.env || false;
   };
+
+  const currentProviderStatus = selectedProvider
+    ? credentialsData?.[selectedProvider as keyof AICredentialsStatusResponse]
+    : undefined;
+  const hasSavedKey = !!currentProviderStatus?.saved;
+  const hasEnvKey = !!currentProviderStatus?.env;
+  const canGenerate =
+    !!endpoint &&
+    (useBasicMode || (!!selectedProvider && (!!useStoredKey || !!customApiKey)));
 
   return (
     <div
@@ -311,39 +372,77 @@ function SchemaPage() {
                       </div>
                     )}
 
-                    {/* Credential Status */}
-                    {providerHasCredentials(selectedProvider) ? (
-                      <Callout
-                        title="API Key Configured"
-                        icon={CheckCircle}
-                        color="emerald"
-                      >
-                        Using saved credentials:{" "}
-                        {credentialsData?.[selectedProvider as keyof AICredentialsStatusResponse]?.masked}
-                      </Callout>
-                    ) : (
-                      <div className="space-y-2">
-                        <Flex className="gap-2 items-center">
-                          <Key className="w-4 h-4 text-slate-400" />
-                          <Text className="text-sm font-medium">API Key</Text>
-                        </Flex>
-                        <TextInput
-                          type="password"
-                          placeholder="Enter your API key..."
-                          value={apiKey}
-                          onChange={(e) => setApiKey(e.target.value)}
-                        />
-                        <Flex className="gap-2 items-center">
-                          <Switch
-                            checked={saveApiKey}
-                            onChange={setSaveApiKey}
+                    {/* Credential Selection - Checkbox Style */}
+                    <div className="space-y-3">
+                      <Flex className="gap-2 items-center">
+                        <Key className="w-4 h-4 text-slate-400" />
+                        <Text className="text-sm font-medium">API Key</Text>
+                      </Flex>
+
+                      {/* Saved Key Checkbox */}
+                      {hasSavedKey && (
+                        <label className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={useStoredKey === "saved"}
+                            onChange={(e) => setUseStoredKey(e.target.checked ? "saved" : null)}
+                            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <div className="flex-1">
+                            <Flex className="gap-2 items-center">
+                              <Text className="text-sm font-medium">Use saved key</Text>
+                              <Badge color="emerald" size="xs">Config File</Badge>
+                            </Flex>
+                            <Text className="text-xs text-slate-500 font-mono">
+                              {currentProviderStatus?.savedMasked || currentProviderStatus?.masked}
+                            </Text>
+                          </div>
+                        </label>
+                      )}
+
+                      {/* Env Key Checkbox */}
+                      {hasEnvKey && (
+                        <label className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={useStoredKey === "env"}
+                            onChange={(e) => setUseStoredKey(e.target.checked ? "env" : null)}
+                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className="flex-1">
+                            <Flex className="gap-2 items-center">
+                              <Text className="text-sm font-medium">Use environment variable</Text>
+                              <Badge color="blue" size="xs">Server Env</Badge>
+                            </Flex>
+                            <Text className="text-xs text-slate-500 font-mono">
+                              {currentProviderStatus?.envMasked || "Available"}
+                            </Text>
+                          </div>
+                        </label>
+                      )}
+
+                      {/* Manual Entry - shown when no checkbox is checked */}
+                      {!useStoredKey && (
+                        <div className="space-y-2">
+                          <TextInput
+                            type="password"
+                            placeholder="Enter your API key..."
+                            value={customApiKey}
+                            onChange={(e) => setCustomApiKey(e.target.value)}
                           />
                           <Text className="text-sm text-slate-600">
-                            Save to ~/.config/orion/deployment-config.json
+                            This key will be saved to ~/.config/orion/deployment-config.json
                           </Text>
-                        </Flex>
-                      </div>
-                    )}
+                        </div>
+                      )}
+
+                      {/* Show resolved key confirmation when using stored key */}
+                      {useStoredKey && resolvedKeyMasked && (
+                        <Callout title="Using stored credentials" icon={CheckCircle} color="emerald">
+                          Active key: {resolvedKeyMasked}
+                        </Callout>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -365,7 +464,7 @@ function SchemaPage() {
               color="emerald"
               onClick={() => generateMutation.mutate()}
               loading={generateMutation.isPending}
-              disabled={!endpoint || (!useBasicMode && !selectedProvider && !providerHasCredentials(selectedProvider))}
+              disabled={!canGenerate}
             >
               {useBasicMode ? "Generate Basic Config" : "Generate AI Config"}
             </Button>

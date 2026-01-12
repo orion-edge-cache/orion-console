@@ -25,6 +25,8 @@ export interface AIProvider {
 export interface CredentialStatus {
   saved: boolean;
   env: boolean;
+  savedMasked?: string;
+  envMasked?: string;
   masked?: string;
 }
 
@@ -33,6 +35,14 @@ export interface AICredentialsStatusResponse {
   openai: CredentialStatus;
   gemini: CredentialStatus;
   grok: CredentialStatus;
+}
+
+export type AICredentialSource = "env" | "saved";
+
+export interface AICredentialsResolveResponse {
+  key: string;
+  source: AICredentialSource;
+  masked: string;
 }
 
 export interface EndpointResponse {
@@ -202,6 +212,28 @@ export async function getAICredentialsStatus(): Promise<AICredentialsStatusRespo
   }
 
   return response.json();
+}
+
+/**
+ * Resolve AI provider credentials from a specific source
+ */
+export async function resolveAICredentials(
+  provider: string,
+  source: AICredentialSource
+): Promise<AICredentialsResolveResponse> {
+  const response = await fetch(`${API_BASE_URL}/schema/credentials/resolve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider, source }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || "Failed to resolve credentials");
+  }
+
+  return data;
 }
 
 /**
