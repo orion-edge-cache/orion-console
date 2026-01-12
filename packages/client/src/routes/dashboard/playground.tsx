@@ -7,7 +7,7 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Play,
@@ -54,15 +54,56 @@ interface CacheAnalysis {
   warnings: string[];
 }
 
-function PlaygroundPage() {
-  const [query, setQuery] = useState(`query {
+// localStorage keys for persisting playground state
+const STORAGE_KEYS = {
+  query: 'orion-playground-query',
+  variables: 'orion-playground-variables',
+} as const;
+
+const DEFAULT_QUERY = `query {
   __typename
-}`);
-  const [variables, setVariables] = useState('{}');
+}`;
+
+function getStoredValue(key: string, defaultValue: string): string {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored !== null ? stored : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+function PlaygroundPage() {
+  const [query, setQuery] = useState(() =>
+    getStoredValue(STORAGE_KEYS.query, DEFAULT_QUERY)
+  );
+  const [variables, setVariables] = useState(() =>
+    getStoredValue(STORAGE_KEYS.variables, '{}')
+  );
   const [response, setResponse] = useState<ResponseData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const queryRef = useRef<HTMLTextAreaElement>(null);
+  const variablesRef = useRef<HTMLTextAreaElement>(null);
+
+  // Persist query to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.query, query);
+    } catch {
+      // Ignore storage errors (quota exceeded, private mode, etc.)
+    }
+  }, [query]);
+
+  // Persist variables to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.variables, variables);
+    } catch {
+      // Ignore storage errors
+    }
+  }, [variables]);
 
   const { data: infraData } = useQuery({
     queryKey: ['infrastructure-status'],
@@ -237,6 +278,7 @@ function PlaygroundPage() {
               <Text className="text-sm font-medium">Query</Text>
             </div>
             <textarea
+              ref={queryRef}
               className="flex-1 w-full p-4 text-sm focus:outline-none resize-none font-mono"
               style={{
                 background: 'var(--color-bg-secondary)',
@@ -244,6 +286,21 @@ function PlaygroundPage() {
               }}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') {
+                  e.preventDefault();
+                  const textarea = queryRef.current;
+                  if (!textarea) return;
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const spaces = '  ';
+                  const newValue = query.substring(0, start) + spaces + query.substring(end);
+                  setQuery(newValue);
+                  requestAnimationFrame(() => {
+                    textarea.selectionStart = textarea.selectionEnd = start + spaces.length;
+                  });
+                }
+              }}
               placeholder="Enter your GraphQL query..."
               spellCheck={false}
             />
@@ -262,6 +319,7 @@ function PlaygroundPage() {
               <Text className="text-sm font-medium">Variables</Text>
             </div>
             <textarea
+              ref={variablesRef}
               className="w-full h-20 p-4 text-sm focus:outline-none resize-none font-mono"
               style={{
                 background: 'var(--color-bg-secondary)',
@@ -269,6 +327,21 @@ function PlaygroundPage() {
               }}
               value={variables}
               onChange={(e) => setVariables(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') {
+                  e.preventDefault();
+                  const textarea = variablesRef.current;
+                  if (!textarea) return;
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const spaces = '  ';
+                  const newValue = variables.substring(0, start) + spaces + variables.substring(end);
+                  setVariables(newValue);
+                  requestAnimationFrame(() => {
+                    textarea.selectionStart = textarea.selectionEnd = start + spaces.length;
+                  });
+                }
+              }}
               placeholder="{}"
               spellCheck={false}
             />

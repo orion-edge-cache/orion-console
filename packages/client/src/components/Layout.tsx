@@ -6,6 +6,8 @@
  */
 
 import { Link, useRouterState } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../services/query-keys';
 import {
   LayoutDashboard,
   BarChart3,
@@ -30,6 +32,7 @@ const navItems = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouterState();
   const currentPath = router.location.pathname;
+  const queryClient = useQueryClient();
 
   return (
     <div className="flex h-screen" style={{ background: 'var(--color-bg-primary)' }}>
@@ -77,6 +80,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={item.path === '/dashboard/configure'
+                  ? () => queryClient.invalidateQueries({ queryKey: queryKeys.config })
+                  : undefined}
                 className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
               >
                 <Icon className="w-[18px] h-[18px]" />

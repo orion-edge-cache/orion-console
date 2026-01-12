@@ -6,9 +6,9 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Save, AlertCircle, CheckCircle, Loader2, Info } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Loader2, Info, RotateCcw } from 'lucide-react';
 import {
   Card,
   Title,
@@ -19,7 +19,7 @@ import {
   Callout,
   Textarea,
 } from '@tremor/react';
-import { getConfig, saveConfig } from '../../services';
+import { getConfig, saveConfig, resetConfig } from '../../services';
 import type { OrionConfig } from '../../types';
 
 export const Route = createFileRoute('/dashboard/configure')({
@@ -32,23 +32,40 @@ function ConfigurePage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [configText, setConfigText] = useState('');
   const [syncedToEdge, setSyncedToEdge] = useState(false);
+  const lastSyncedConfig = useRef<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: configData, isLoading } = useQuery({
     queryKey: ['config'],
     queryFn: getConfig,
   });
 
-  // Initialize config text when data loads
+  // Sync config text when server data changes
   useEffect(() => {
-    if (configData?.config && !configText) {
-      setConfigText(JSON.stringify(configData.config, null, 2));
+    if (configData?.config) {
+      const newConfigStr = JSON.stringify(configData.config, null, 2);
+      if (lastSyncedConfig.current !== newConfigStr) {
+        lastSyncedConfig.current = newConfigStr;
+        setConfigText(newConfigStr);
+      }
     }
-  }, [configData, configText]);
+  }, [configData]);
 
   const saveMutation = useMutation({
     mutationFn: saveConfig,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['config'] });
+      setSaveSuccess(true);
+      setSyncedToEdge(data.configStoreUpdated || false);
+      setTimeout(() => setSaveSuccess(false), 5000);
+    },
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: resetConfig,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['config'] });
+      setConfigText(JSON.stringify(data.config, null, 2));
       setSaveSuccess(true);
       setSyncedToEdge(data.configStoreUpdated || false);
       setTimeout(() => setSaveSuccess(false), 5000);
@@ -84,13 +101,27 @@ function ConfigurePage() {
               Define cache rules and TTL settings
             </Text>
           </div>
-          <Button
-            icon={saveMutation.isPending ? Loader2 : Save}
-            loading={saveMutation.isPending}
-            onClick={handleSave}
-          >
-            {saveMutation.isPending ? 'Saving...' : 'Save Configuration'}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              icon={resetMutation.isPending ? Loader2 : RotateCcw}
+              variant="secondary"
+              loading={resetMutation.isPending}
+              onClick={() => {
+                if (confirm('Reset configuration to defaults? This will discard any unsaved changes.')) {
+                  resetMutation.mutate();
+                }
+              }}
+            >
+              {resetMutation.isPending ? 'Resetting...' : 'Reset to Defaults'}
+            </Button>
+            <Button
+              icon={saveMutation.isPending ? Loader2 : Save}
+              loading={saveMutation.isPending}
+              onClick={handleSave}
+            >
+              {saveMutation.isPending ? 'Saving...' : 'Save Configuration'}
+            </Button>
+          </div>
         </Flex>
       </header>
 
@@ -136,6 +167,19 @@ function ConfigurePage() {
             </Callout>
           )}
 
+          {resetMutation.isError && (
+            <Callout
+              className="mb-4"
+              title="Reset Failed"
+              icon={AlertCircle}
+              color="red"
+            >
+              {resetMutation.error instanceof Error
+                ? resetMutation.error.message
+                : 'Failed to reset configuration'}
+            </Callout>
+          )}
+
           {/* JSON Editor */}
           <Card className="overflow-hidden p-0">
             <div
@@ -149,6 +193,7 @@ function ConfigurePage() {
               <Badge color="cyan" size="sm">JSON</Badge>
             </div>
             <Textarea
+              ref={textareaRef}
               className="w-full h-[600px] p-4 text-sm focus:outline-none resize-none border-none rounded-none font-mono"
               style={{
                 background: 'var(--color-bg-secondary)',
@@ -158,6 +203,21 @@ function ConfigurePage() {
               onChange={(e) => {
                 setConfigText(e.target.value);
                 setJsonError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') {
+                  e.preventDefault();
+                  const textarea = textareaRef.current;
+                  if (!textarea) return;
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const spaces = '  ';
+                  const newValue = configText.substring(0, start) + spaces + configText.substring(end);
+                  setConfigText(newValue);
+                  requestAnimationFrame(() => {
+                    textarea.selectionStart = textarea.selectionEnd = start + spaces.length;
+                  });
+                }
               }}
               placeholder={isLoading ? 'Loading configuration...' : 'Paste your configuration JSON here...'}
             />
@@ -170,26 +230,42 @@ function ConfigurePage() {
             icon={Info}
             color="blue"
           >
-            <ul className="text-sm space-y-1 mt-2">
-              <li>
-                <code className="px-1 rounded bg-blue-100 text-blue-700">
-                  defaults.maxAge
-                </code>
-                {' '}- Default cache TTL in seconds
-              </li>
-              <li>
-                <code className="px-1 rounded bg-blue-100 text-blue-700">
-                  rules
-                </code>
-                {' '}- Per-type cache rules (overrides defaults)
-              </li>
-              <li>
-                <code className="px-1 rounded bg-blue-100 text-blue-700">
-                  invalidations
-                </code>
-                {' '}- Mutation to Type invalidation mappings
-              </li>
-            </ul>
+            <div className="text-sm space-y-4 mt-2">
+              {/* Defaults */}
+              <div>
+                <strong>Defaults</strong>
+                <ul className="mt-1 space-y-1 ml-4">
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">maxAge</code> - Default cache TTL in seconds</li>
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">staleWhileRevalidate</code> - Serve stale while fetching fresh</li>
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">staleIfError</code> - Serve stale if origin errors</li>
+                </ul>
+              </div>
+
+              {/* Rule Options */}
+              <div>
+                <strong>Rule Options</strong>
+                <ul className="mt-1 space-y-1 ml-4">
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">types</code> - Array of GraphQL types this rule applies to</li>
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">maxAge</code> - Cache TTL in seconds (overrides default)</li>
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">staleWhileRevalidate</code> - SWR duration in seconds</li>
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">staleIfError</code> - SIE duration in seconds</li>
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">scope</code> - "public" or "private"</li>
+                  <li><code className="px-1 rounded bg-blue-100 text-blue-700">passthrough</code> - Bypass cache entirely (boolean)</li>
+                </ul>
+                <div className="mt-2 p-2 rounded bg-blue-50 font-mono text-xs">
+                  {'{ "types": ["Post"], "maxAge": 300, "staleWhileRevalidate": 60 }'}
+                </div>
+              </div>
+
+              {/* Invalidations */}
+              <div>
+                <strong>Invalidations</strong>
+                <p className="mt-1 ml-4">Map mutation names to types that should be invalidated when the mutation runs.</p>
+                <div className="mt-2 p-2 rounded bg-blue-50 font-mono text-xs">
+                  {'"createPost": ["Post", "User"]'}
+                </div>
+              </div>
+            </div>
           </Callout>
         </div>
       </div>

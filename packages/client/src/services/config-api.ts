@@ -50,3 +50,24 @@ export async function saveConfig(
 
   return data;
 }
+
+export interface ResetConfigResponse extends SaveConfigResponse {
+  config: OrionConfig;
+}
+
+/**
+ * Reset config to default values
+ */
+export async function resetConfig(): Promise<ResetConfigResponse> {
+  const response = await fetch(`${API_BASE_URL}/config/reset`, {
+    method: "POST",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to reset configuration");
+  }
+
+  return data;
+}

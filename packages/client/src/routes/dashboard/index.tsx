@@ -19,6 +19,7 @@ import {
   TestTube2,
   Heart,
   Database,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Card,
@@ -55,6 +56,7 @@ import {
 import {
   CacheTestsResultDialog,
   AnalyticsResultDialog,
+  ErrorGeneratorResultDialog,
 } from "../../components/dashboard/dialogs";
 
 // Dashboard-specific hooks
@@ -288,6 +290,21 @@ function DashboardOverview() {
                 "Verifies the GraphQL server is responding",
               ]}
             />
+
+            {/* Generate Errors (Demo) */}
+            <ActionCard
+              icon={<AlertTriangle className="w-5 h-5" />}
+              title="Generate Errors"
+              description="Trigger 4xx and 5xx responses"
+              accentColor="red"
+              onClick={() => demoActions.handleDemoAction("generate-errors")}
+              loading={demoActions.errorGeneratorMutation.isPending}
+              tooltip={[
+                "Sends a malformed request to trigger 4xx error",
+                "Calls /error endpoint to trigger 5xx error",
+                "Tests error tracking in analytics dashboard",
+              ]}
+            />
           </Grid>
         </>
       )}
@@ -320,6 +337,14 @@ function DashboardOverview() {
         <AnalyticsResultDialog
           result={demoActions.analyticsResult}
           onClose={() => demoActions.setAnalyticsResult(null)}
+        />
+      )}
+
+      {/* Error Generator Results Dialog */}
+      {demoActions.errorGeneratorResult && (
+        <ErrorGeneratorResultDialog
+          result={demoActions.errorGeneratorResult}
+          onClose={() => demoActions.setErrorGeneratorResult(null)}
         />
       )}
 

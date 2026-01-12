@@ -243,4 +243,39 @@ router.post('/config', async (req, res) => {
   }
 });
 
+const DEFAULT_CONFIG_PATH = path.join(__dirname, '../../../../../orion-infra/edge/src/defaultConfig.json');
+
+router.post('/config/reset', async (_req, res) => {
+  try {
+    const defaultConfigContent = await fs.readFile(DEFAULT_CONFIG_PATH, 'utf-8');
+    const defaultConfig: OrionConfig = JSON.parse(defaultConfigContent);
+
+    await saveConfigJson(defaultConfig);
+
+    const tsContent = generateConfigFile(defaultConfig);
+    await fs.writeFile(CONFIG_PATH, tsContent, 'utf-8');
+
+    let configStoreUpdated = false;
+    try {
+      configStoreUpdated = await updateFastlyConfigStore(defaultConfig);
+    } catch {
+      // Infrastructure not deployed, that's ok
+    }
+
+    res.json({
+      success: true,
+      config: defaultConfig,
+      configStoreUpdated,
+      message: configStoreUpdated
+        ? 'Config reset to defaults and synced to Fastly edge'
+        : 'Config reset to defaults (infrastructure not deployed)'
+    });
+  } catch (error) {
+    console.error('Error resetting config:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to reset configuration'
+    });
+  }
+});
+
 export default router;
