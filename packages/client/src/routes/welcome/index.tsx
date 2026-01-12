@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { WelcomeWizard } from './WelcomeWizard';
+import { WelcomeWizard } from './-WelcomeWizard';
 
 export const Route = createFileRoute('/welcome/')({
   component: WelcomePage,

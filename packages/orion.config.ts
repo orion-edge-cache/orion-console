@@ -13,15 +13,7 @@ const config = {
     "staleWhileRevalidate": 0,
     "staleIfError": 0
   },
-  "rules": [
-    {
-      "types": [
-        "Users"
-      ],
-      "maxAge": 0,
-      "scope": "private"
-    }
-  ],
+  "rules": [],
   "invalidations": {}
 };
 
