@@ -61,7 +61,7 @@ router.get("/demo-app/health", async (_req, res) => {
       clearTimeout(timeout);
 
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as Record<string, unknown>;
         res.json({
           healthy: true,
           ...data,

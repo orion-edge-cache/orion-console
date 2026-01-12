@@ -85,18 +85,6 @@ export interface AnalyticsResponse {
   error?: string;
 }
 
-export interface ErrorGeneratorResult {
-  success: boolean;
-  error4xx: { status: number; message: string } | null;
-  error5xx: { status: number; message: string } | null;
-}
-
-export interface ErrorGeneratorResponse {
-  success: boolean;
-  result?: ErrorGeneratorResult;
-  error?: string;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // API Functions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,19 +129,3 @@ export async function runAnalyticsGenerator(
   return data;
 }
 
-/**
- * Generate test errors (4xx and 5xx)
- */
-export async function generateErrors(): Promise<ErrorGeneratorResponse> {
-  const response = await fetch(`${API_BASE_URL}/demo-tools/generate-errors`, {
-    method: "POST",
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to generate errors");
-  }
-
-  return data;
-}
