@@ -18,7 +18,6 @@ import {
   Trash2,
   TestTube2,
   Heart,
-  Database,
 } from "lucide-react";
 import {
   Card,
@@ -38,7 +37,7 @@ import {
   getObservabilityStatus,
 } from "../../services";
 import { checkDemoAppHealth } from "../../services/demo-app-api";
-import type { ObservabilityStatus } from "@orion-console/shared";
+import { KinesisStatusBadge } from "@/components/shared/observability";
 
 // Context
 import { useMetrics } from "../../context";
@@ -335,48 +334,3 @@ function DashboardOverview() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Kinesis Status Badge Component
-// ═══════════════════════════════════════════════════════════════════════
-
-function KinesisStatusBadge({
-  status,
-}: {
-  status?: ObservabilityStatus["kinesis"];
-}) {
-  if (!status) {
-    return (
-      <Badge icon={Database} color="gray" size="lg">
-        Kinesis Unknown
-      </Badge>
-    );
-  }
-
-  if (!status.running) {
-    return (
-      <Badge icon={Database} color="yellow" size="lg">
-        Kinesis Starting...
-      </Badge>
-    );
-  }
-
-  // Check if we've received data recently (within last 60s)
-  const lastRecordAge = status.lastRecordTime
-    ? Date.now() - new Date(status.lastRecordTime).getTime()
-    : null;
-  const isReceivingData = lastRecordAge !== null && lastRecordAge < 60000;
-
-  if (isReceivingData) {
-    return (
-      <Badge icon={Database} color="emerald" size="lg">
-        Kinesis Active
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge icon={Database} color="blue" size="lg">
-      Kinesis Ready
-    </Badge>
-  );
-}

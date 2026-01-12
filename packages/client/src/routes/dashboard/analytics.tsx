@@ -9,7 +9,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
-import type { ObservabilityStatus } from '@orion-console/shared';
 import {
   Activity,
   TrendingUp,
@@ -18,7 +17,6 @@ import {
   Zap,
   Target,
   AlertTriangle,
-  Database,
   Trash2,
 } from 'lucide-react';
 import {
@@ -35,6 +33,7 @@ import { useMetrics } from '../../context';
 import { HitRateChart, RequestsChart, LatencyChart } from '@/components/MetricsChart';
 import { getConfig, getObservabilityStatus, clearAnalytics } from '../../services';
 import { ConfirmDialog } from '../../components/Dialogs';
+import { KinesisStatusBadge } from '@/components/shared/observability';
 
 export const Route = createFileRoute('/dashboard/analytics')({
   component: AnalyticsPage,
@@ -326,48 +325,3 @@ function StatCard({ label, value, icon, colorVar, subtext }: StatCardProps) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   KINESIS STATUS BADGE COMPONENT
-   ───────────────────────────────────────────────────────────────────────────── */
-
-function KinesisStatusBadge({
-  status,
-}: {
-  status?: ObservabilityStatus["kinesis"];
-}) {
-  if (!status) {
-    return (
-      <Badge icon={Database} color="gray" size="lg">
-        Kinesis Unknown
-      </Badge>
-    );
-  }
-
-  if (!status.running) {
-    return (
-      <Badge icon={Database} color="yellow" size="lg">
-        Kinesis Starting...
-      </Badge>
-    );
-  }
-
-  // Check if we've received data recently (within last 60s)
-  const lastRecordAge = status.lastRecordTime
-    ? Date.now() - new Date(status.lastRecordTime).getTime()
-    : null;
-  const isReceivingData = lastRecordAge !== null && lastRecordAge < 60000;
-
-  if (isReceivingData) {
-    return (
-      <Badge icon={Database} color="emerald" size="lg">
-        Kinesis Active
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge icon={Database} color="blue" size="lg">
-      Kinesis Ready
-    </Badge>
-  );
-}
