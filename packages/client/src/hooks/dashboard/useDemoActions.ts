@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   runCacheTests,
-  runAnalyticsGenerator,
+  runAnalyticsGeneratorStreaming,
   type CacheTestsResult,
   type AnalyticsResult,
 } from "../../services";
@@ -28,10 +28,10 @@ export function useDemoActions(onError?: (message: string) => void) {
   });
 
   const analyticsMutation = useMutation({
-    mutationFn: () => runAnalyticsGenerator(100),
+    mutationFn: () => runAnalyticsGeneratorStreaming(100),
     onSuccess: (data) => {
-      if (data.result) {
-        setAnalyticsResult(data.result);
+      if (data) {
+        setAnalyticsResult(data);
       } else {
         onError?.("No analytics results returned");
       }

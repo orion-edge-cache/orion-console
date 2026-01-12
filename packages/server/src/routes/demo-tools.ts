@@ -11,7 +11,9 @@ import {
   executeAnalyticsGenerator,
   type CacheTestsResult,
   type AnalyticsResult,
+  type RequestResult,
 } from "@orion/demo-tools";
+import { recordRequest } from "../sse/metrics-aggregator.js";
 
 const router = express.Router();
 
@@ -67,6 +69,56 @@ router.post("/demo-tools/analytics", async (req, res) => {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
     });
+  }
+});
+
+/**
+ * POST /api/demo-tools/analytics-stream
+ * Streams per-request results via SSE, updates dashboard in real-time
+ */
+router.post("/demo-tools/analytics-stream", async (req, res) => {
+  const { requestCount = 100 } = req.body as { requestCount?: number };
+
+  // Validate request count
+  if (typeof requestCount !== "number" || requestCount < 1) {
+    return res.status(400).json({
+      success: false,
+      error: "requestCount must be a positive number",
+    });
+  }
+
+  const cappedCount = Math.min(requestCount, 10000);
+
+  // Set up SSE headers
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  try {
+    const result = await executeAnalyticsGenerator(
+      cappedCount,
+      undefined, // onProgress not needed
+      (requestResult: RequestResult) => {
+        // Feed to metrics aggregator for real-time dashboard updates
+        recordRequest({
+          cache_status: requestResult.cacheStatus,
+          status_code: requestResult.status,
+          latency_ms: requestResult.duration,
+        });
+
+        // Stream progress to client
+        res.write(`data: ${JSON.stringify({ type: "progress", result: requestResult })}\n\n`);
+      }
+    );
+
+    // Send final result
+    res.write(`data: ${JSON.stringify({ type: "complete", result })}\n\n`);
+    res.end();
+  } catch (error) {
+    console.error("Error running streaming analytics generator:", error);
+    res.write(`data: ${JSON.stringify({ type: "error", error: error instanceof Error ? error.message : "Unknown error" })}\n\n`);
+    res.end();
   }
 });
 
