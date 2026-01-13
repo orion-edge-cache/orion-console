@@ -1,15 +1,11 @@
 {
-  "name": "orion-ui",
+  "name": "@orion-console/client",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "npm --prefix ../server run dev",
-    "dev:frontend": "vite",
-    "build": "npm run build:backend && npm run build:frontend",
-    "build:backend": "npm --prefix ../server run build",
-    "build:frontend": "vite build",
+    "dev": "vite",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
