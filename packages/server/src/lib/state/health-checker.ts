@@ -2,7 +2,7 @@
  * Health check utilities
  */
 
-import type { SystemStatus } from '../../types/system.js';
+import type { SystemStatus } from "../../types/system.js";
 
 export interface HealthCheckResult {
   healthy: boolean;
@@ -11,9 +11,10 @@ export interface HealthCheckResult {
 
 /**
  * Perform health check on deployed services
+ * called by src/lib/state.ts
  */
 export async function performHealthCheck(
-  services?: SystemStatus['services']
+  services?: SystemStatus["services"],
 ): Promise<HealthCheckResult> {
   const results: HealthCheckResult = {
     healthy: true,
