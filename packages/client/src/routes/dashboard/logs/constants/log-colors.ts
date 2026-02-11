@@ -22,6 +22,7 @@ export const cacheColors: Record<string, string> = {
   HIT: "var(--color-success)",
   MISS: "var(--color-error)",
   PASS: "var(--color-warning)",
+  RECV: "var(--color-info)",
   HASH: "var(--color-info)",
   FETCH: "var(--color-info)",
   DELIVER: "var(--color-info)",
