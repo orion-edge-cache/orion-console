@@ -5,23 +5,24 @@
  * Drives the root router and global UI behavior.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '../utils';
+import { useQuery } from "@tanstack/react-query";
+import { API_BASE_URL } from "../utils";
+import { SYSTEM_STATE_FETCH_INTERVAL } from "../utils";
 
 // ═══════════════════════════════════════════════════════════════════════
 // Types (must match server/state.ts)
 // ═══════════════════════════════════════════════════════════════════════
 
 export type SystemState =
-  | 'IDLE'
-  | 'CHECKING'
-  | 'DEPLOYING'
-  | 'ACTIVE'
-  | 'DEGRADED'
-  | 'DESTROYING'
-  | 'BACKEND_DOWN';
+  | "IDLE"
+  | "CHECKING"
+  | "DEPLOYING"
+  | "ACTIVE"
+  | "DEGRADED"
+  | "DESTROYING"
+  | "BACKEND_DOWN";
 
-export type OperationType = 'deploy' | 'destroy' | 'repair' | null;
+export type OperationType = "deploy" | "destroy" | "repair" | null;
 
 export interface SystemStatus {
   state: SystemState;
@@ -69,10 +70,13 @@ interface UseSystemStateOptions {
 }
 
 export function useSystemState(options: UseSystemStateOptions = {}) {
-  const { refetchInterval = 5000, refetchOnWindowFocus = true } = options;
+  const {
+    refetchInterval = SYSTEM_STATE_FETCH_INTERVAL,
+    refetchOnWindowFocus = true,
+  } = options;
 
   const query = useQuery({
-    queryKey: ['system-status'],
+    queryKey: ["system-status"],
     queryFn: fetchSystemStatus,
     refetchInterval,
     refetchOnWindowFocus,
@@ -80,17 +84,17 @@ export function useSystemState(options: UseSystemStateOptions = {}) {
     staleTime: 2000,
     // On error, return a BACKEND_DOWN state
     placeholderData: {
-      state: 'CHECKING' as SystemState,
+      state: "CHECKING" as SystemState,
       currentOperation: null,
-      version: '1.0.0',
+      version: "1.0.0",
       lastCheck: new Date().toISOString(),
     },
   });
 
   // Determine effective state (handle error case)
   const state: SystemState = query.error
-    ? 'BACKEND_DOWN'
-    : query.data?.state ?? 'CHECKING';
+    ? "BACKEND_DOWN"
+    : (query.data?.state ?? "CHECKING");
 
   const isLocked = query.data?.currentOperation !== null;
 
@@ -103,16 +107,16 @@ export function useSystemState(options: UseSystemStateOptions = {}) {
     isLocked,
     currentOperation: query.data?.currentOperation ?? null,
     services: query.data?.services,
-    version: query.data?.version ?? '1.0.0',
+    version: query.data?.version ?? "1.0.0",
     // State checks
-    isIdle: state === 'IDLE',
-    isActive: state === 'ACTIVE',
-    isDegraded: state === 'DEGRADED',
-    isDeploying: state === 'DEPLOYING',
-    isDestroying: state === 'DESTROYING',
-    isBackendDown: state === 'BACKEND_DOWN',
+    isIdle: state === "IDLE",
+    isActive: state === "ACTIVE",
+    isDegraded: state === "DEGRADED",
+    isDeploying: state === "DEPLOYING",
+    isDestroying: state === "DESTROYING",
+    isBackendDown: state === "BACKEND_DOWN",
     // Helper for disabling mutations
-    canMutate: !isLocked && state !== 'BACKEND_DOWN',
+    canMutate: !isLocked && state !== "BACKEND_DOWN",
   };
 }
 
@@ -142,10 +146,12 @@ export interface VerifyCredsResponse {
   errors: string[];
 }
 
-export async function verifyCredentials(creds: VerifyCredsRequest): Promise<VerifyCredsResponse> {
+export async function verifyCredentials(
+  creds: VerifyCredsRequest,
+): Promise<VerifyCredsResponse> {
   const response = await fetch(`${API_BASE_URL}/verify-creds`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds),
     signal: AbortSignal.timeout(15000),
   });
@@ -168,13 +174,13 @@ export interface DestroyPlan {
 
 export async function planDestroy(): Promise<DestroyPlan> {
   const response = await fetch(`${API_BASE_URL}/infra/plan-destroy`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Failed to plan destroy');
+    throw new Error(error.error || "Failed to plan destroy");
   }
 
   return response.json();
