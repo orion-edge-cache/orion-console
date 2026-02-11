@@ -5,7 +5,7 @@
 import {
   GetRecordsCommand,
   GetShardIteratorCommand,
-} from '@aws-sdk/client-kinesis';
+} from "@aws-sdk/client-kinesis";
 import {
   getKinesisClient,
   getIsRunning,
@@ -17,16 +17,16 @@ import {
   incrementErrors,
   updateLastPollTime,
   INFRASTRUCTURE_CHECK_INTERVAL,
-} from './state.js';
-import { processRecord } from './record-processor.js';
-import { isInfrastructureAvailable } from './infrastructure-checker.js';
+} from "./state.js";
+import { processRecord } from "./record-processor.js";
+import { isInfrastructureAvailable } from "./infrastructure-checker.js";
 
 /**
  * Poll records from all shards
  */
 export async function pollRecords(
   streamName: string,
-  stopConsumer: (reason: string) => void
+  stopConsumer: (reason: string) => void,
 ): Promise<void> {
   const kinesisClient = getKinesisClient();
   const shardIterators = getShardIterators();
@@ -41,9 +41,9 @@ export async function pollRecords(
     setLastInfrastructureCheck(now);
     const infraAvailable = await isInfrastructureAvailable();
     if (!infraAvailable) {
-      console.log('[Kinesis] Infrastructure destroyed, stopping consumer');
+      console.log("[Kinesis] Infrastructure destroyed, stopping consumer");
       setIsStopping(true);
-      setTimeout(() => stopConsumer('infrastructure destroyed'), 0);
+      setTimeout(() => stopConsumer("infrastructure destroyed"), 0);
       return;
     }
   }
@@ -63,7 +63,7 @@ export async function pollRecords(
       } else {
         // Shard is closed and exhausted
         console.log(
-          `[Kinesis] Shard ${shardId} is closed and exhausted. Removing from poll list.`
+          `[Kinesis] Shard ${shardId} is closed and exhausted. Removing from poll list.`,
         );
         shardIterators.delete(shardId);
       }
@@ -71,18 +71,20 @@ export async function pollRecords(
       // Process records
       if (response.Records && response.Records.length > 0) {
         for (const record of response.Records) {
+          console.log("SHARD DATA");
+          console.log(record);
           processRecord(record.Data);
         }
       }
     } catch (error: any) {
       incrementErrors();
 
-      if (error.name === 'ExpiredIteratorException') {
+      if (error.name === "ExpiredIteratorException") {
         await reinitializeShardIterator(streamName, shardId, shardIterators);
       } else {
         console.error(
           `[Kinesis] Error polling shard ${shardId}:`,
-          error.message
+          error.message,
         );
       }
     }
@@ -95,20 +97,20 @@ export async function pollRecords(
 async function reinitializeShardIterator(
   streamName: string,
   shardId: string,
-  shardIterators: Map<string, string>
+  shardIterators: Map<string, string>,
 ): Promise<void> {
   const kinesisClient = getKinesisClient();
   if (!kinesisClient) return;
 
   console.log(
-    `[Kinesis] Iterator expired for shard ${shardId}, re-initializing`
+    `[Kinesis] Iterator expired for shard ${shardId}, re-initializing`,
   );
 
   try {
     const iteratorCmd = new GetShardIteratorCommand({
       StreamName: streamName,
       ShardId: shardId,
-      ShardIteratorType: 'LATEST',
+      ShardIteratorType: "LATEST",
     });
     const response = await kinesisClient.send(iteratorCmd);
     if (response.ShardIterator) {
@@ -117,7 +119,7 @@ async function reinitializeShardIterator(
   } catch (reinitError) {
     console.error(
       `[Kinesis] Failed to reinitialize iterator for shard ${shardId}:`,
-      reinitError
+      reinitError,
     );
   }
 }

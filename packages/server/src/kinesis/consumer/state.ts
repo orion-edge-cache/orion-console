@@ -2,7 +2,7 @@
  * Consumer state management
  */
 
-import type { KinesisClient } from '@aws-sdk/client-kinesis';
+import type { KinesisClient } from "@aws-sdk/client-kinesis";
 
 // Consumer state
 let isRunning = false;
@@ -12,7 +12,7 @@ let pollInterval: NodeJS.Timeout | null = null;
 let shardIterators: Map<string, string> = new Map();
 let lastInfrastructureCheck = 0;
 
-export const INFRASTRUCTURE_CHECK_INTERVAL = 10000; // Check every 10 seconds
+export const INFRASTRUCTURE_CHECK_INTERVAL = 30000; // Check every 30 seconds
 
 // Stats for monitoring
 let stats = {
