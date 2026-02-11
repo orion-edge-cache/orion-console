@@ -21,11 +21,7 @@ export function parseTimestamp(record: RawKinesisRecord): number {
  * Detect log source based on record content
  */
 export function detectSource(record: RawKinesisRecord): LogEntry["source"] {
-  if (
-    record.event ||
-    record.title?.includes("Compute") ||
-    record.service === "Compute"
-  ) {
+  if (record.service === "Compute") {
     return "compute";
   }
   if (record.service === "CDN" || record.Subroutine || record.response_state) {
@@ -45,6 +41,7 @@ export function extractCacheStatus(
   }
   if (record.Subroutine) {
     const sub = record.Subroutine.toLowerCase();
+    if (sub.includes("vcl_recv")) return "RECV";
     if (sub.includes("vcl_hit")) return "HIT";
     if (sub.includes("vcl_miss")) return "MISS";
     if (sub.includes("vcl_pass")) return "PASS";
