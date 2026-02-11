@@ -23,19 +23,6 @@ export {
   reinitializeShardIterator,
 } from "./client.js";
 
-// Export parser functions
-export {
-  parseKinesisRecord,
-  parseTimestamp,
-  detectSource,
-  extractCacheStatus,
-  extractStatusCode,
-  determineLevel,
-  extractLatency,
-  extractVclFields,
-  buildMessage,
-} from "./parser.js";
-
 // ═══════════════════════════════════════════════════════════════════════
 // Auto-start with retry
 // ═══════════════════════════════════════════════════════════════════════

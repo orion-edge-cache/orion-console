@@ -10,6 +10,7 @@ import {
   incrementErrors,
   updateLastRecordTime,
 } from "./state.js";
+import type { RawKinesisRecord, LogEntry } from "./types.js";
 
 /**
  * Process a single Kinesis record
@@ -30,7 +31,7 @@ export function processRecord(data: Uint8Array | undefined): void {
 
     // Only count request completion logs for metrics (those with response_state)
     // VCL debug logs are stored but not counted as requests
-    if (record.service === "cdn" && record.subroutine === "deliver") {
+    if (logEntry.source === "cdn" && record.subroutine === "deliver") {
       // Request completion log - store with metrics
       insertLogWithMetrics(logEntry);
 
@@ -62,7 +63,6 @@ export function formatKinesisRecord(record: RawKinesisRecord): LogEntry {
         `formatKinesisRecord: record does not have ${prop} property`,
       );
     result[prop] = record[prop];
-    delete record[prop];
   });
   if (record.source === "cdn" && record.subroutine === "deliver") {
     result.latency_ms = extractLatency(record);

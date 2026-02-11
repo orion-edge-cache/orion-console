@@ -5,6 +5,7 @@ export interface LogEntry {
   source: SourceType;
 
   latency_ms?: number;
+  subroutine?: string;
   rawJson?: string;
   data?: Record<string, unknown>;
 }
@@ -30,7 +31,6 @@ export type LevelType = "info" | "warn" | "error" | "debug";
 export interface CDNSubroutineRecord
   extends CommonRecordItems, VCLReq, VCLBereq, VCLBeresp, VCLObj {
   // Common fields (all subroutines)
-  subroutine: SubroutineType;
 }
 
 export interface ComputeLog extends CommonRecordItems {
@@ -72,6 +72,21 @@ export interface CDNSummaryLog extends CommonRecordItems {
   resp_body_size: number; // Response body bytes
 }
 
+export interface CommonRecordItems {
+  request_id: string;
+  source: SourceType;
+  level: LevelType;
+  timestamp: string;
+  subroutine?: SubroutineType;
+  cdn_version?: string;
+  req_url?: string;
+  req_host?: string;
+  req_path?: string;
+  req_method?: string;
+  req_body?: string;
+  req_user_agent?: string;
+}
+
 // Base states
 type FastlyBaseState =
   | "NONE"
@@ -95,20 +110,6 @@ type FastlyStateWithSuffix =
   | `${FastlyBaseState}${FastlySuffix}`
   | `${FastlyBaseState}${FastlySuffix}${FastlySuffix}`;
 type FastlyInfoState = FastlyStateWithSuffix;
-
-export interface CommonRecordItems {
-  request_id: string;
-  source: SourceType;
-  level: LevelType;
-  timestamp: string;
-  cdn_version?: string;
-  req_url?: string;
-  req_host?: string;
-  req_path?: string;
-  req_method?: string;
-  req_body?: string;
-  req_user_agent?: string;
-}
 
 export interface ComputeLogDataRecord {
   // Request debug data
