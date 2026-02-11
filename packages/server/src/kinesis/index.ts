@@ -12,7 +12,7 @@ export {
   getConsumerStats,
   handleInfrastructureDestroyed,
   handleInfrastructureDeployed,
-} from './consumer.js';
+} from "./consumer.js";
 
 // Export client functions
 export {
@@ -21,7 +21,7 @@ export {
   createKinesisClient,
   initializeShardIterators,
   reinitializeShardIterator,
-} from './client.js';
+} from "./client.js";
 
 // Export parser functions
 export {
@@ -34,17 +34,17 @@ export {
   extractLatency,
   extractVclFields,
   buildMessage,
-} from './parser.js';
-
-// Export types
-export type { RawKinesisRecord } from './types.js';
-export type { AWSCredentials } from './client.js';
+} from "./parser.js";
 
 // ═══════════════════════════════════════════════════════════════════════
 // Auto-start with retry
 // ═══════════════════════════════════════════════════════════════════════
 
-import { startConsumer, isConsumerRunning, isInfrastructureAvailable } from './consumer.js';
+import {
+  startConsumer,
+  isConsumerRunning,
+  isInfrastructureAvailable,
+} from "./consumer.js";
 
 let autoStartAttempts = 0;
 let autoStartTimer: NodeJS.Timeout | null = null;
@@ -57,13 +57,15 @@ async function attemptAutoStart(): Promise<void> {
   if (isConsumerRunning()) return; // Already running
 
   autoStartAttempts++;
-  
+
   // Check if infrastructure is available before attempting to start
   const infraAvailable = await isInfrastructureAvailable();
   if (!infraAvailable) {
     // No infrastructure, schedule retry
     if (autoStartAttempts === 1) {
-      console.log("[Kinesis] No infrastructure detected, waiting for deployment");
+      console.log(
+        "[Kinesis] No infrastructure detected, waiting for deployment",
+      );
     }
     autoStartTimer = setTimeout(attemptAutoStart, 10000);
     return;
@@ -77,9 +79,7 @@ async function attemptAutoStart(): Promise<void> {
       console.log(
         "[Kinesis] Consumer not started (missing credentials or stream error)",
       );
-      console.log(
-        "[Kinesis] Will retry every 10s until consumer starts",
-      );
+      console.log("[Kinesis] Will retry every 10s until consumer starts");
     }
     autoStartTimer = setTimeout(attemptAutoStart, 10000);
   } else {
@@ -107,4 +107,4 @@ export function triggerAutoStart(): void {
 setTimeout(attemptAutoStart, 2000);
 
 // Aliases for manual control
-export { startConsumer as start, stopConsumer as stop } from './consumer.js';
+export { startConsumer as start, stopConsumer as stop } from "./consumer.js";
