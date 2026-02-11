@@ -4,12 +4,9 @@
  * Functions for inserting and querying log entries.
  */
 
-import { db } from './schema.js';
-import { updateMetricsBucket } from './metrics.js';
-import type { LogEntry } from '../types/log-entry.js';
-
-// Re-export LogEntry for convenience
-export type { LogEntry };
+import { db } from "./schema.js";
+import { updateMetricsBucket } from "./metrics.js";
+import type { CDNSummaryLog } from "../kinesis/types.js";
 
 const insertLogStmt = db.prepare(`
   INSERT INTO logs (
@@ -24,14 +21,14 @@ const insertLogStmt = db.prepare(`
 /**
  * Insert a log entry into the database
  */
-export function insertLog(log: LogEntry): void {
+export function insertLog(log: CDNSummaryLog): void {
   insertLogStmt.run({
     timestamp: log.timestamp,
-    level: log.level || 'info',
-    source: log.source || 'backend',
-    request_method: log.request_method || null,
-    url: log.url || null,
-    status_code: log.status_code || null,
+    level: log.level || "info",
+    service: log.service || "backend",
+    method: log.req_method || null,
+    url: log.req_url || null,
+    status_code: log.resp_status || null,
     latency_ms: log.latency_ms || null,
     cache_status: log.cache_status || null,
     operation_type: log.operation_type || null,
@@ -63,6 +60,9 @@ const getLogsStmt = db.prepare(`
 /**
  * Get logs since a given timestamp
  */
-export function getLogs(since: number = Date.now() - 3600000, limit: number = 1000): LogEntry[] {
+export function getLogs(
+  since: number = Date.now() - 3600000,
+  limit: number = 1000,
+): LogEntry[] {
   return getLogsStmt.all({ since, limit }) as LogEntry[];
 }
