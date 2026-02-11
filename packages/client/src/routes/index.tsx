@@ -10,9 +10,10 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { AlertCircle, RefreshCw, Loader2, Rocket, Trash2 } from 'lucide-react';
+import { AlertCircle, RefreshCw, Loader2, Trash2 } from 'lucide-react';
 import { Button, Card, Text, Title } from '@tremor/react';
 import { useSystemState } from '../hooks';
+import { SYSTEM_STATE_FETCH_INTERVAL } from '@/utils';
 
 export const Route = createFileRoute('/')({
   component: IndexPage,
@@ -26,7 +27,7 @@ function IndexPage() {
     refetch,
     isRefetching,
     currentOperation,
-  } = useSystemState({ refetchInterval: 3000 });
+  } = useSystemState({ refetchInterval: SYSTEM_STATE_FETCH_INTERVAL });
 
   // Handle routing based on state
   useEffect(() => {
