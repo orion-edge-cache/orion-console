@@ -15,6 +15,9 @@
     "build": "npm run build --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present"
   },
+  "dependencies": {
+    "@orion/infra": "github:orion-edge-cache/orion-infra#main"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
