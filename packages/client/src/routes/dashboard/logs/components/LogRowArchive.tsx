@@ -24,17 +24,16 @@ export const LogRow = memo(function LogRow({ log, onClick }: LogRowProps) {
   if (!log) return null;
 
   // Build message with request details if available
-  let displayMessage = log.source;
-  let subroutine: string;
-  if (log.source === 'cdn' && log.data && typeof log.data.subroutine === 'string') {
-    subroutine = log.data.subroutine.toUpperCase();
-  } else if (log.source === 'cdn') {
-    subroutine = 'UNKNOWN';
-  } else {
-    subroutine = 'EDGE';
+  let displayMessage = log.message || '';
+  if (!displayMessage && log.request_method && log.url) {
+    displayMessage = `${log.request_method} ${log.url}`;
+    if (log.status_code) displayMessage += ` → ${log.status_code}`;
+    if (log.cache_status) displayMessage += ` [${log.cache_status}]`;
+    if (log.latency_ms) displayMessage += ` ${log.latency_ms}ms`;
   }
 
   // Normalize cache status for color matching (handle HIT-CLUSTER, MISS-CLUSTER, etc.)
+  const cacheStatusKey = log.cache_status?.split('-')[0] || '';
 
   return (
     <div
@@ -44,12 +43,6 @@ export const LogRow = memo(function LogRow({ log, onClick }: LogRowProps) {
       }}
       onClick={onClick}
     >
-      <span
-        className="flex-shrink-0 w-24 text-xs"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        ...{log.request_id.slice(-4)}
-      </span>
       <span
         className="flex-shrink-0 w-24 text-xs"
         style={{ color: 'var(--color-text-muted)' }}
@@ -68,11 +61,30 @@ export const LogRow = memo(function LogRow({ log, onClick }: LogRowProps) {
       >
         [{log.source || 'system'}]
       </span>
+      {log.cache_status && (
+        <span
+          className="flex-shrink-0 w-16 text-xs"
+          style={{ color: cacheColors[cacheStatusKey] || 'var(--color-text-muted)' }}
+        >
+          {log.cache_status}
+        </span>
+      )}
+      {log.operation_name && (
+        <span className="flex-shrink-0 text-xs">
+          <span style={{ color: 'var(--color-text-muted)' }}>{log.operation_type || 'query'}:</span>
+          <span
+            className="ml-1"
+            style={{ color: operationTypeColors[log.operation_type || ''] || 'var(--color-accent)' }}
+          >
+            {log.operation_name}
+          </span>
+        </span>
+      )}
       <span
         className="text-xs truncate flex-1"
-        style={{ color: cacheColors[subroutine] || 'var(--color-text-secondary)' }}
+        style={{ color: 'var(--color-text-secondary)' }}
       >
-        {subroutine}
+        {displayMessage}
       </span>
       <ChevronRight
         className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0"

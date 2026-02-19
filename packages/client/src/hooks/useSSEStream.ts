@@ -8,7 +8,13 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import type { Channel, LogEntry, MetricsUpdate, DataPoint, SystemEvent } from "@orion-console/shared";
+import type {
+  Channel,
+  LogEntry,
+  MetricsUpdate,
+  DataPoint,
+  SystemEvent,
+} from "@orion-console/shared";
 
 // ═══════════════════════════════════════════════════════════════════════
 // SSE Stream Hook

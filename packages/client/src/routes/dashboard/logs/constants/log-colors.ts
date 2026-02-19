@@ -27,6 +27,7 @@ export const cacheColors: Record<string, string> = {
   FETCH: "var(--color-info)",
   DELIVER: "var(--color-info)",
   SYNTH: "var(--color-info)",
+  EDGE: "var(--color-info)",
 };
 
 export const operationTypeColors: Record<string, string> = {

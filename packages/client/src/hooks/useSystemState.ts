@@ -51,7 +51,10 @@ async function fetchSystemStatus(): Promise<SystemStatus> {
     throw new Error(`Failed to fetch status: ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  console.log(json);
+
+  return new Promise((res, _rej) => res(json));
 }
 
 // ═══════════════════════════════════════════════════════════════════════

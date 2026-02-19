@@ -1,22 +1,22 @@
-import express from 'express';
+import express from "express";
 import {
   getLogs,
   getAggregatedMetrics,
   getTimeSeries,
   getEvents,
   clearAnalytics,
-} from '../db/index.js';
+} from "../db/index.js";
 import {
   startConsumer as startKinesisConsumer,
   stopConsumer as stopKinesisConsumer,
   isConsumerRunning,
   getConsumerStats,
-} from '../kinesis/index.js';
-import { getSubscriberCount } from '../sse/index.js';
+} from "../kinesis/index.js";
+import { getSubscriberCount } from "../sse/index.js";
 
 const router = express.Router();
 
-router.get('/metrics', async (req, res) => {
+router.get("/metrics", async (req, res) => {
   try {
     const range = parseInt(req.query.range as string) || 300;
     const since = Math.floor(Date.now() / 1000) - range;
@@ -32,14 +32,14 @@ router.get('/metrics', async (req, res) => {
       cacheMisses: metrics.cacheMisses,
     });
   } catch (error) {
-    console.error('Error fetching metrics:', error);
+    console.error("Error fetching metrics:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
-router.get('/metrics/timeseries', async (req, res) => {
+router.get("/metrics/timeseries", async (req, res) => {
   try {
     const range = parseInt(req.query.range as string) || 300;
     const bucketSize = parseInt(req.query.bucket as string) || 1;
@@ -53,14 +53,15 @@ router.get('/metrics/timeseries', async (req, res) => {
       bucketSize,
     });
   } catch (error) {
-    console.error('Error fetching time series:', error);
+    console.error("Error fetching time series:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
-router.get('/logs', async (req, res) => {
+router.get("/logs", async (req, res) => {
+  console.log("LOGS");
   try {
     const since = parseInt(req.query.since as string) || Date.now() - 3600000;
     const limit = Math.min(parseInt(req.query.limit as string) || 1000, 5000);
@@ -69,14 +70,14 @@ router.get('/logs', async (req, res) => {
 
     res.json({ logs });
   } catch (error) {
-    console.error('Error fetching logs:', error);
+    console.error("Error fetching logs:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
-router.get('/events', async (req, res) => {
+router.get("/events", async (req, res) => {
   try {
     const since = parseInt(req.query.since as string) || Date.now() - 86400000;
     const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
@@ -85,14 +86,14 @@ router.get('/events', async (req, res) => {
 
     res.json({ events });
   } catch (error) {
-    console.error('Error fetching events:', error);
+    console.error("Error fetching events:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
-router.get('/observability/status', async (_req, res) => {
+router.get("/observability/status", async (_req, res) => {
   try {
     const consumerStats = getConsumerStats();
 
@@ -109,45 +110,45 @@ router.get('/observability/status', async (_req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching observability status:', error);
+    console.error("Error fetching observability status:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
-router.post('/observability/kinesis/start', async (_req, res) => {
+router.post("/observability/kinesis/start", async (_req, res) => {
   try {
     const started = await startKinesisConsumer();
     res.json({ success: started });
   } catch (error) {
-    console.error('Error starting Kinesis consumer:', error);
+    console.error("Error starting Kinesis consumer:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
-router.post('/observability/kinesis/stop', async (_req, res) => {
+router.post("/observability/kinesis/stop", async (_req, res) => {
   try {
     stopKinesisConsumer();
     res.json({ success: true });
   } catch (error) {
-    console.error('Error stopping Kinesis consumer:', error);
+    console.error("Error stopping Kinesis consumer:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
-router.post('/observability/analytics/clear', async (_req, res) => {
+router.post("/observability/analytics/clear", async (_req, res) => {
   try {
     clearAnalytics();
     res.json({ success: true });
   } catch (error) {
-    console.error('Error clearing analytics:', error);
+    console.error("Error clearing analytics:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });

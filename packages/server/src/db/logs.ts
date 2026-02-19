@@ -6,35 +6,36 @@
 
 import { db } from "./schema.js";
 import { updateMetricsBucket } from "./metrics.js";
-import type { CDNSummaryLog } from "../kinesis/types.js";
+import type { FastlyLogEntry } from "@orion/infra";
 
 const insertLogStmt = db.prepare(`
   INSERT INTO logs (
     timestamp, level, source, request_method, url, status_code,
-    latency_ms, cache_status, operation_type, operation_name, message, raw_json
+    latency_ms, cache_status, operation_type, raw_json
   ) VALUES (
     @timestamp, @level, @source, @request_method, @url, @status_code,
-    @latency_ms, @cache_status, @operation_type, @operation_name, @message, @raw_json
+    @latency_ms, @cache_status, @operation_type, @raw_json
   )
 `);
 
 /**
  * Insert a log entry into the database
  */
-export function insertLog(log: CDNSummaryLog): void {
+export function insertLog(log: FastlyLogEntry): void {
+  if (!isDeliverLog(log)) return;
+
+  const dataa = log.data;
   insertLogStmt.run({
     timestamp: log.timestamp,
     level: log.level || "info",
-    service: log.service || "backend",
-    method: log.req_method || null,
+    source: log.source || "backend",
+    request_method: log.data.req_method || null,
     url: log.req_url || null,
     status_code: log.resp_status || null,
     latency_ms: log.latency_ms || null,
-    cache_status: log.cache_status || null,
+    cache_status: log.resp_status || null,
     operation_type: log.operation_type || null,
-    operation_name: log.operation_name || null,
-    message: log.message || null,
-    raw_json: log.raw_json || null,
+    raw_json: JSON.stringify(log),
   });
   // Note: Metrics are updated via recordRequest() in the Kinesis consumer
   // only for actual request completion logs (those with response_state)
@@ -43,9 +44,9 @@ export function insertLog(log: CDNSummaryLog): void {
 /**
  * Insert log AND update metrics bucket (for request completion logs only)
  */
-export function insertLogWithMetrics(log: LogEntry): void {
+export function insertLogWithMetrics(log: CDNSummaryLog): void {
   insertLog(log);
-  if (log.cache_status || log.status_code) {
+  if (log.fastly_cache_state || log.resp_status) {
     updateMetricsBucket(log);
   }
 }
@@ -63,6 +64,10 @@ const getLogsStmt = db.prepare(`
 export function getLogs(
   since: number = Date.now() - 3600000,
   limit: number = 1000,
-): LogEntry[] {
-  return getLogsStmt.all({ since, limit }) as LogEntry[];
+): FastlyLogEntry[] {
+  return getLogsStmt.all({ since, limit }) as FastlyLogEntry[];
 }
+
+const isDeliverLog = (log: FastlyLogEntry) => {
+  return log.event.toLowerCase() === "deliver";
+};

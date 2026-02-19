@@ -4,13 +4,13 @@
  * Polling logic and record processing for Kinesis streams.
  */
 
-import { insertEvent } from '../db/index.js';
+import { insertEvent } from "../db/index.js";
 import {
   getStreamName,
   getCredentials,
   createKinesisClient,
   initializeShardIterators,
-} from './client.js';
+} from "./aws-setup.js";
 import {
   getIsRunning,
   getConsumerStats,
@@ -21,33 +21,32 @@ import {
   getPollInterval,
   getShardIterators,
   resetState,
-} from './consumer/state.js';
-import { pollRecords } from './consumer/shard-manager.js';
-import { processRecord } from './consumer/record-processor.js';
-import { isInfrastructureAvailable } from './consumer/infrastructure-checker.js';
+} from "./state.js";
+import { pollRecords } from "./shard-manager.js";
+import { processRecord } from "./record-processor.js";
 
 // Re-export for backward compatibility
-export { processRecord, pollRecords, isInfrastructureAvailable };
+export { processRecord, pollRecords };
 
 /**
  * Start the Kinesis consumer
  */
 export async function startConsumer(): Promise<boolean> {
   if (getIsRunning()) {
-    console.log('[Kinesis] Consumer already running');
+    console.log("[Kinesis] Consumer already running");
     return true;
   }
 
   try {
     const streamName = await getStreamName();
     if (!streamName) {
-      console.log('[Kinesis] No stream name found, consumer not started');
+      console.log("[Kinesis] No stream name found, consumer not started");
       return false;
     }
 
     const credentials = await getCredentials();
     if (!credentials) {
-      console.log('[Kinesis] No AWS credentials found, consumer not started');
+      console.log("[Kinesis] No AWS credentials found, consumer not started");
       return false;
     }
 
@@ -59,19 +58,19 @@ export async function startConsumer(): Promise<boolean> {
 
     setIsRunning(true);
     setPollInterval(
-      setInterval(() => pollRecords(streamName, stopConsumer), 1000)
+      setInterval(() => pollRecords(streamName, stopConsumer), 1000),
     );
 
     console.log(`[Kinesis] Consumer started for stream: ${streamName}`);
     insertEvent({
       timestamp: Date.now(),
-      type: 'config_change',
+      type: "config_change",
       message: `Kinesis consumer started for stream: ${streamName}`,
     });
 
     return true;
   } catch (error) {
-    console.error('[Kinesis] Failed to start consumer:', error);
+    console.error("[Kinesis] Failed to start consumer:", error);
     return false;
   }
 }
@@ -87,7 +86,7 @@ export function stopConsumer(reason?: string): void {
   resetState();
   const message = reason
     ? `[Kinesis] Consumer stopped: ${reason}`
-    : '[Kinesis] Consumer stopped';
+    : "[Kinesis] Consumer stopped";
   console.log(message);
 }
 
@@ -108,16 +107,16 @@ export { getConsumerStats };
  */
 export function handleInfrastructureDestroyed(): void {
   if (!getIsRunning()) {
-    console.log('[Kinesis] Consumer not running, nothing to stop');
+    console.log("[Kinesis] Consumer not running, nothing to stop");
     return;
   }
-  console.log('[Kinesis] Infrastructure destroyed, stopping consumer');
+  console.log("[Kinesis] Infrastructure destroyed, stopping consumer");
   setIsStopping(true);
-  stopConsumer('infrastructure destroyed');
+  stopConsumer("infrastructure destroyed");
   insertEvent({
     timestamp: Date.now(),
-    type: 'config_change',
-    message: 'Kinesis consumer stopped due to infrastructure destruction',
+    type: "config_change",
+    message: "Kinesis consumer stopped due to infrastructure destruction",
   });
 }
 
@@ -125,13 +124,15 @@ export function handleInfrastructureDestroyed(): void {
  * Handle infrastructure deployment event
  */
 export async function handleInfrastructureDeployed(): Promise<boolean> {
-  console.log('[Kinesis] Infrastructure deployed, starting consumer');
+  console.log("[Kinesis] Infrastructure deployed, starting consumer");
   setIsStopping(false);
   const started = await startConsumer();
   if (started) {
-    console.log('[Kinesis] Consumer started after infrastructure deployment');
+    console.log("[Kinesis] Consumer started after infrastructure deployment");
   } else {
-    console.log('[Kinesis] Failed to start consumer after deployment, will retry');
+    console.log(
+      "[Kinesis] Failed to start consumer after deployment, will retry",
+    );
   }
   return started;
 }

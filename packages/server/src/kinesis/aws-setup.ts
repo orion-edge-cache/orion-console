@@ -19,7 +19,10 @@ import os from "os";
 // ═══════════════════════════════════════════════════════════════════════
 
 const ORION_CONFIG_DIR = path.join(os.homedir(), ".config/orion");
-const DEPLOYMENT_CONFIG_PATH = path.join(ORION_CONFIG_DIR, "deployment-config.json");
+const DEPLOYMENT_CONFIG_PATH = path.join(
+  ORION_CONFIG_DIR,
+  "deployment-config.json",
+);
 const TFSTATE_PATH = path.join(ORION_CONFIG_DIR, "terraform.tfstate");
 
 interface SavedCredentials {
@@ -105,7 +108,9 @@ export async function getCredentials(): Promise<AWSCredentials | null> {
 /**
  * Create a new Kinesis client with the given credentials
  */
-export function createKinesisClient(credentials: AWSCredentials): KinesisClient {
+export function createKinesisClient(
+  credentials: AWSCredentials,
+): KinesisClient {
   return new KinesisClient({
     region: credentials.region,
     credentials: {
@@ -125,7 +130,7 @@ export function createKinesisClient(credentials: AWSCredentials): KinesisClient 
 export async function initializeShardIterators(
   client: KinesisClient,
   streamName: string,
-  shardIterators: Map<string, string>
+  shardIterators: Map<string, string>,
 ): Promise<void> {
   const describeCmd = new DescribeStreamCommand({ StreamName: streamName });
   const response = await client.send(describeCmd);
@@ -150,23 +155,12 @@ export async function initializeShardIterators(
   console.log(`[Kinesis] Initialized ${shardIterators.size} shard iterator(s)`);
 }
 
-/**
- * Re-initialize a single shard iterator (e.g., after expiration)
- */
-export async function reinitializeShardIterator(
-  client: KinesisClient,
-  streamName: string,
-  shardId: string,
-  shardIterators: Map<string, string>
-): Promise<void> {
-  const iteratorCmd = new GetShardIteratorCommand({
-    StreamName: streamName,
-    ShardId: shardId,
-    ShardIteratorType: "LATEST",
-  });
-  const response = await client.send(iteratorCmd);
-  if (response.ShardIterator) {
-    shardIterators.set(shardId, response.ShardIterator);
+export async function isInfrastructureAvailable(): Promise<boolean> {
+  try {
+    await fs.access(TFSTATE_PATH);
+    return true;
+  } catch {
+    return false;
   }
 }
 

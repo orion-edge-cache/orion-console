@@ -1,43 +1,45 @@
-import express from 'express';
-import { getSystemState } from '../lib/state.js';
-import { checkCLIDependencies } from '../lib/cli-dependencies.js';
-import { checkDemoAppDeployed, getDemoAppStatus } from '@orion/demo-app';
+import express from "express";
+import { getSystemState } from "../lib/state.js";
+import { checkCLIDependencies } from "../lib/cli-dependencies.js";
+import { checkDemoAppDeployed, getDemoAppStatus } from "@orion/demo-app";
 
 const router = express.Router();
 
-router.get('/status', async (_req, res) => {
+router.get("/status", async (_req, res) => {
   try {
     const status = await getSystemState();
+    console.log(status);
     res.json(status);
   } catch (error) {
-    console.error('Error getting system status:', error);
+    console.error("Error getting system status:", error);
     res.status(500).json({
-      state: 'BACKEND_DOWN',
+      state: "BACKEND_DOWN",
       currentOperation: null,
-      version: '1.0.0',
+      version: "1.0.0",
       lastCheck: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
-router.get('/infrastructure/status', async (_req, res) => {
+router.get("/infrastructure/status", async (_req, res) => {
   try {
-    const fs = await import('fs/promises');
-    const path = await import('path');
-    const os = await import('os');
+    const fs = await import("fs/promises");
+    const path = await import("path");
+    const os = await import("os");
 
-    const ORION_CONFIG_DIR = path.join(os.homedir(), '.config/orion');
-    const TFSTATE_PATH = path.join(ORION_CONFIG_DIR, 'terraform.tfstate');
+    const ORION_CONFIG_DIR = path.join(os.homedir(), ".config/orion");
+    const TFSTATE_PATH = path.join(ORION_CONFIG_DIR, "terraform.tfstate");
 
-    const terraformStateExists = await fs.access(TFSTATE_PATH)
+    const terraformStateExists = await fs
+      .access(TFSTATE_PATH)
       .then(() => true)
       .catch(() => false);
 
     let services = {};
     if (terraformStateExists) {
       try {
-        const stateContent = await fs.readFile(TFSTATE_PATH, 'utf-8');
+        const stateContent = await fs.readFile(TFSTATE_PATH, "utf-8");
         const state = JSON.parse(stateContent);
 
         const outputs = state.outputs || {};
@@ -51,7 +53,7 @@ router.get('/infrastructure/status', async (_req, res) => {
           iamRole: outputs.iam_role?.value?.name,
         };
       } catch (error) {
-        console.error('Error reading terraform state:', error);
+        console.error("Error reading terraform state:", error);
       }
     }
 
@@ -69,7 +71,7 @@ router.get('/infrastructure/status', async (_req, res) => {
           };
         }
       } catch (error) {
-        console.error('Error getting demo app status:', error);
+        console.error("Error getting demo app status:", error);
       }
     }
 
@@ -79,12 +81,12 @@ router.get('/infrastructure/status', async (_req, res) => {
         terraformStateExists,
         services: terraformStateExists ? services : undefined,
         demoApp,
-      }
+      },
     });
   } catch (error) {
-    console.error('Error checking infrastructure status:', error);
+    console.error("Error checking infrastructure status:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -92,14 +94,14 @@ router.get('/infrastructure/status', async (_req, res) => {
 /**
  * Check if required CLI tools (fastly, terraform) are installed
  */
-router.get('/cli-dependencies', async (_req, res) => {
+router.get("/cli-dependencies", async (_req, res) => {
   try {
     const status = await checkCLIDependencies();
     res.json(status);
   } catch (error) {
-    console.error('Error checking CLI dependencies:', error);
+    console.error("Error checking CLI dependencies:", error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       allInstalled: false,
       dependencies: [],
       missingCommands: [],

@@ -7,12 +7,12 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Card, Text, Button } from '@tremor/react';
-import type { LogEntry } from '../../../../types';
+import type { FastlyLogEntry } from '@orion/infra'
 import { JsonHighlight } from '@/components/JsonHighlight';
 import { levelColors, sourceColors, cacheColors } from '../constants';
 
 interface LogInspectorProps {
-  log: LogEntry;
+  log: FastlyLogEntry;
   onClose: () => void;
 }
 
@@ -26,37 +26,13 @@ export function LogInspector({ log, onClose }: LogInspectorProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Determine if this is a VCL debug log
-  const isVclLog = !!(log.vcl_subroutine || log.vcl_title);
-
-  // Build all fields for display
   const fields: { label: string; value: string | number | boolean | undefined; color?: string }[] = [
     { label: 'Timestamp', value: new Date(log.timestamp).toISOString() },
     { label: 'Level', value: log.level?.toUpperCase(), color: levelColors[log.level] },
     { label: 'Source', value: log.source, color: sourceColors[log.source] },
+    { label: 'Event', value: log.event, color: levelColors[log.level] },
     { label: 'Message', value: log.message },
-    { label: 'Request Method', value: log.request_method },
-    { label: 'URL', value: log.url },
-    { label: 'Status Code', value: log.status_code },
-    { label: 'Cache Status', value: log.cache_status, color: cacheColors[log.cache_status?.split('-')[0] || ''] },
-    { label: 'Latency (ms)', value: log.latency_ms },
-    { label: 'Operation Type', value: log.operation_type },
-    { label: 'Operation Name', value: log.operation_name },
-    // VCL-specific fields
-    ...(isVclLog ? [
-      { label: 'VCL Subroutine', value: log.vcl_subroutine, color: 'var(--color-accent)' },
-      { label: 'VCL Title', value: log.vcl_title },
-      { label: 'VCL Step', value: log.vcl_step },
-      { label: 'CDN Version', value: log.vcl_version },
-      { label: 'Host', value: log.vcl_host },
-      { label: 'Path', value: log.vcl_path },
-      { label: 'X-GraphQL-Query', value: log.vcl_graphql_query },
-      { label: 'Body', value: log.vcl_body },
-      { label: 'Backend', value: log.vcl_backend },
-      { label: 'Cacheable', value: log.vcl_cacheable },
-      { label: 'Restarts', value: log.vcl_restarts },
-    ] : []),
-  ].filter(f => f.value !== undefined && f.value !== null && f.value !== '');
+  ]
 
   return (
     <div
@@ -105,7 +81,7 @@ export function LogInspector({ log, onClose }: LogInspectorProps) {
           {log.data && Object.keys(log.data).length > 0 && (
             <div className="pt-3 border-t" style={{ borderColor: 'var(--color-border-subtle)' }}>
               <Text className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>
-                Debug Data
+                Data
               </Text>
               <div
                 className="p-3 rounded-lg overflow-x-auto"
@@ -115,19 +91,6 @@ export function LogInspector({ log, onClose }: LogInspectorProps) {
               </div>
             </div>
           )}
-
-          {/* Raw JSON */}
-          <div className="pt-3 border-t" style={{ borderColor: 'var(--color-border-subtle)' }}>
-            <Text className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>
-              Raw JSON
-            </Text>
-            <div
-              className="p-3 rounded-lg overflow-x-auto"
-              style={{ background: 'var(--color-bg-tertiary)' }}
-            >
-              <JsonHighlight data={log} className="text-xs" />
-            </div>
-          </div>
         </div>
 
         {/* Footer */}

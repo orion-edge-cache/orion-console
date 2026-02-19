@@ -4,22 +4,22 @@
  * Sets up SQLite database with tables for logs, metrics, and events.
  */
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import os from 'os';
-import fs from 'fs';
+import Database from "better-sqlite3";
+import path from "path";
+import os from "os";
+import fs from "fs";
 
 // Database path in config directory
-const ORION_CONFIG_DIR = path.join(os.homedir(), '.config/orion');
-const DB_PATH = path.join(ORION_CONFIG_DIR, 'observability.db');
+const ORION_CONFIG_DIR = path.join(os.homedir(), ".config/orion");
+const DB_PATH = path.join(ORION_CONFIG_DIR, "observability.db");
 
 // Ensure directory exists
 fs.mkdirSync(ORION_CONFIG_DIR, { recursive: true });
 
 // Initialize database
 const db: Database.Database = new Database(DB_PATH);
-db.pragma('journal_mode = WAL'); // Better concurrent access
-db.pragma('synchronous = NORMAL'); // Faster writes, still safe
+db.pragma("journal_mode = WAL"); // Better concurrent access
+db.pragma("synchronous = NORMAL"); // Faster writes, still safe
 
 // Create schema
 db.exec(`
@@ -40,9 +40,6 @@ db.exec(`
     -- GraphQL specific
     operation_type TEXT,                 -- query, mutation
     operation_name TEXT,
-
-    -- Raw message for non-request logs
-    message TEXT,
 
     -- Full JSON for debugging
     raw_json TEXT

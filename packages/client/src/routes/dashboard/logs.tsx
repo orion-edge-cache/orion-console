@@ -160,7 +160,7 @@ function LogsPage() {
       } catch { return '--:--:--'; }
     };
     const logText = logs
-      .map((log) => `[${formatTime(log.timestamp)}] [${log.level.toUpperCase()}] [${log.source}] ${log.message || ''}`)
+      .map((log) => `[${formatTime(log.timestamp)}] [${log.data?.request_id || 'No Request Id'}] [${log.level.toUpperCase()}] [${log.source}] ${log.subroutine || ''}`)
       .join('\n');
     const blob = new Blob([logText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);

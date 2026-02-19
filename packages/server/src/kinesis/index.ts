@@ -12,26 +12,22 @@ export {
   getConsumerStats,
   handleInfrastructureDestroyed,
   handleInfrastructureDeployed,
-} from "./consumer.js";
+} from "./lifecycle.js";
 
-// Export client functions
 export {
   getStreamName,
   getCredentials,
   createKinesisClient,
   initializeShardIterators,
-  reinitializeShardIterator,
-} from "./client.js";
+  isInfrastructureAvailable,
+} from "./aws-setup.js";
 
 // ═══════════════════════════════════════════════════════════════════════
 // Auto-start with retry
 // ═══════════════════════════════════════════════════════════════════════
 
-import {
-  startConsumer,
-  isConsumerRunning,
-  isInfrastructureAvailable,
-} from "./consumer.js";
+import { isInfrastructureAvailable } from "./aws-setup.js";
+import { startConsumer, isConsumerRunning } from "./lifecycle.js";
 
 let autoStartAttempts = 0;
 let autoStartTimer: NodeJS.Timeout | null = null;
@@ -94,4 +90,4 @@ export function triggerAutoStart(): void {
 setTimeout(attemptAutoStart, 2000);
 
 // Aliases for manual control
-export { startConsumer as start, stopConsumer as stop } from "./consumer.js";
+export { startConsumer as start, stopConsumer as stop } from "./lifecycle.js";

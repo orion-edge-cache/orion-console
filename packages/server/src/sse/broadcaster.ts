@@ -4,13 +4,14 @@
  * Manages SSE subscribers and broadcast utilities.
  */
 
-import type { Response } from 'express';
+import type { Response } from "express";
+import type { FastlyLogEntry } from "@orion/infra";
 
 // ═══════════════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════════════
 
-export type Channel = 'logs' | 'metrics' | 'events' | 'all';
+export type Channel = "logs" | "metrics" | "events" | "all";
 
 interface Subscriber {
   res: Response;
@@ -28,14 +29,17 @@ let subscriberId = 0;
 /**
  * Add a new SSE subscriber
  */
-export function addSubscriber(res: Response, channels: Channel[] = ['all']): string {
+export function addSubscriber(
+  res: Response,
+  channels: Channel[] = ["all"],
+): string {
   const id = `sub_${++subscriberId}_${Date.now()}`;
 
   // Set SSE headers
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
 
   // Flush headers immediately to establish connection
   res.flushHeaders();
@@ -48,13 +52,13 @@ export function addSubscriber(res: Response, channels: Channel[] = ['all']): str
   });
 
   // Send initial connection message
-  sendToOne(id, 'connected', { subscriberId: id, channels });
+  sendToOne(id, "connected", { subscriberId: id, channels });
 
   // Start heartbeat for this connection
   const heartbeat = setInterval(() => {
     if (subscribers.has(id)) {
-      res.write(': heartbeat\n\n');
-      if (typeof (res as any).flush === 'function') {
+      res.write(": heartbeat\n\n");
+      if (typeof (res as any).flush === "function") {
         (res as any).flush();
       }
     } else {
@@ -86,15 +90,20 @@ export function getSubscriberCount(): number {
 /**
  * Broadcast to all subscribers on a channel
  */
-export function broadcast(channel: Channel, event: string, data: unknown): void {
+export function broadcast(
+  channel: Channel,
+  event: string,
+  data: unknown,
+): void {
+  console.log("Broadcast event");
   const message = formatSSE(event, data);
 
   for (const [id, sub] of subscribers) {
-    if (sub.channels.has(channel) || sub.channels.has('all')) {
+    if (sub.channels.has(channel) || sub.channels.has("all")) {
       try {
         sub.res.write(message);
         // Flush immediately for real-time delivery
-        if (typeof (sub.res as any).flush === 'function') {
+        if (typeof (sub.res as any).flush === "function") {
           (sub.res as any).flush();
         }
       } catch {
@@ -113,7 +122,7 @@ export function sendToOne(id: string, event: string, data: unknown): void {
   if (sub) {
     try {
       sub.res.write(formatSSE(event, data));
-      if (typeof (sub.res as any).flush === 'function') {
+      if (typeof (sub.res as any).flush === "function") {
         (sub.res as any).flush();
       }
     } catch {
@@ -136,32 +145,9 @@ function formatSSE(event: string, data: unknown): string {
 /**
  * Broadcast a log entry
  */
-export function broadcastLog(log: {
-  timestamp: number;
-  level: string;
-  source: string;
-  message?: string;
-  request_method?: string;
-  url?: string;
-  status_code?: number;
-  cache_status?: string;
-  latency_ms?: number;
-  operation_type?: string;
-  operation_name?: string;
-  // VCL-specific fields
-  vcl_subroutine?: string;
-  vcl_title?: string;
-  vcl_step?: string;
-  vcl_version?: string;
-  vcl_host?: string;
-  vcl_path?: string;
-  vcl_body?: string;
-  vcl_graphql_query?: string;
-  vcl_restarts?: number;
-  vcl_backend?: string;
-  vcl_cacheable?: boolean;
-}): void {
-  broadcast('logs', 'log', log);
+export function broadcastLog(log: FastlyLogEntry): void {
+  console.log("Broadcast log");
+  broadcast("logs", "log", log);
 }
 
 /**
@@ -177,7 +163,7 @@ export function broadcastMetrics(metrics: {
   cacheHits: number;
   cacheMisses: number;
 }): void {
-  broadcast('metrics', 'metrics', metrics);
+  broadcast("metrics", "metrics", metrics);
 }
 
 /**
@@ -188,7 +174,7 @@ export function broadcastEvent(event: {
   message: string;
   metadata?: Record<string, unknown>;
 }): void {
-  broadcast('events', 'event', {
+  broadcast("events", "event", {
     timestamp: Date.now(),
     ...event,
   });
@@ -210,5 +196,5 @@ export function broadcastDataPoint(point: {
   hitAvgLatency: number;
   missAvgLatency: number;
 }): void {
-  broadcast('metrics', 'datapoint', point);
+  broadcast("metrics", "datapoint", point);
 }

@@ -19,7 +19,7 @@ import {
   INFRASTRUCTURE_CHECK_INTERVAL,
 } from "./state.js";
 import { processRecord } from "./record-processor.js";
-import { isInfrastructureAvailable } from "./infrastructure-checker.js";
+import { isInfrastructureAvailable } from "./aws-setup.js";
 
 /**
  * Poll records from all shards
@@ -71,8 +71,6 @@ export async function pollRecords(
       // Process records
       if (response.Records && response.Records.length > 0) {
         for (const record of response.Records) {
-          console.log("SHARD DATA");
-          console.log(record);
           processRecord(record.Data);
         }
       }
