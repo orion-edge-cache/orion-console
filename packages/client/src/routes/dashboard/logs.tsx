@@ -23,7 +23,7 @@ import {
   Text,
   Title,
 } from '@tremor/react';
-import type { LogEntry } from '../../types';
+import type { FastlyLogEntry } from '@orion/infra';
 
 // Local components
 import { LogRow, LogInspector } from './logs/components';
@@ -39,8 +39,8 @@ function LogsPage() {
   // Streaming state
   const [isStreaming, setIsStreaming] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
+  const [logs, setLogs] = useState<FastlyLogEntry[]>([]);
+  const [selectedLog, setSelectedLog] = useState<FastlyLogEntry | null>(null);
 
   // Filter state
   const [levelFilter, setLevelFilter] = useState<'all' | 'info' | 'warn' | 'error'>('all');
@@ -90,7 +90,7 @@ function LogsPage() {
 
     eventSource.addEventListener('log', (event) => {
       try {
-        const log: LogEntry = JSON.parse(event.data);
+        const log: FastlyLogEntry = JSON.parse(event.data);
         if (mountedRef.current) {
           setLogs((prev) => {
             const newLogs = prev.length >= MAX_LOGS
@@ -152,7 +152,7 @@ function LogsPage() {
   const handleClear = () => setLogs([]);
 
   const handleDownload = () => {
-    const formatTime = (ts: number) => {
+    const formatTime = (ts: string) => {
       try {
         const d = new Date(ts);
         return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
@@ -160,7 +160,7 @@ function LogsPage() {
       } catch { return '--:--:--'; }
     };
     const logText = logs
-      .map((log) => `[${formatTime(log.timestamp)}] [${log.data?.request_id || 'No Request Id'}] [${log.level.toUpperCase()}] [${log.source}] ${log.subroutine || ''}`)
+      .map((log) => `[${formatTime(log.timestamp)}] [${log.request_id || 'No Request Id'}] [${log.level.toUpperCase()}] [${log.source}] ${log.event || ''}`)
       .join('\n');
     const blob = new Blob([logText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);

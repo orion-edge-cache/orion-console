@@ -124,18 +124,6 @@ export interface SaveConfigResponse {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Log Types
-// ═══════════════════════════════════════════════════════════════════════
-
-export interface LogEntry {
-  id: string;
-  timestamp: string;
-  level: "info" | "warn" | "error" | "debug";
-  message: string;
-  metadata?: Record<string, unknown>;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
 // Health Types
 // ═══════════════════════════════════════════════════════════════════════
 

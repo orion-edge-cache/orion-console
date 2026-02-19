@@ -1,10 +1,10 @@
 /**
  * Logs API (Historical)
- * 
+ *
  * Note: Use useLogStream hook for real-time logs via SSE
  */
 
-import type { LogEntry } from "@orion-console/shared";
+import type { FastlyLogEntry } from "@orion/infra";
 import { API_BASE_URL } from "../utils";
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -18,7 +18,7 @@ import { API_BASE_URL } from "../utils";
 export async function getLogs(
   since?: number,
   limit?: number,
-): Promise<LogEntry[]> {
+): Promise<FastlyLogEntry[]> {
   const params = new URLSearchParams();
   if (since) params.set("since", since.toString());
   if (limit) params.set("limit", limit.toString());

@@ -1,4 +1,5 @@
 /**
+ *
  * LogInspector Component
  *
  * Modal for displaying detailed log information.

@@ -10,11 +10,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type {
   Channel,
-  LogEntry,
   MetricsUpdate,
   DataPoint,
   SystemEvent,
 } from "@orion-console/shared";
+import { FastlyLogEntry } from "@orion/infra";
 
 // ═══════════════════════════════════════════════════════════════════════
 // SSE Stream Hook
@@ -29,7 +29,7 @@ interface UseSSEStreamOptions {
 }
 
 interface SSEStreamState {
-  logs: LogEntry[];
+  logs: FastlyLogEntry[];
   metrics: MetricsUpdate | null;
   dataPoints: DataPoint[];
   events: SystemEvent[];
@@ -160,7 +160,7 @@ export function useSSEStream(options: UseSSEStreamOptions = {}) {
 
     eventSource.addEventListener("log", (event) => {
       try {
-        const log: LogEntry = JSON.parse(event.data);
+        const log: FastlyLogEntry = JSON.parse(event.data);
         if (mountedRef.current) {
           setState((prev) => ({
             ...prev,

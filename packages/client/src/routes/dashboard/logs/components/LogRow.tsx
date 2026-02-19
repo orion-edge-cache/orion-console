@@ -6,7 +6,7 @@
 
 import { memo } from 'react';
 import { ChevronRight } from 'lucide-react';
-import type { LogEntry } from '../../../../types';
+import type { FastlyLogEntry } from '@orion/infra';
 import { formatTimestamp } from '../utils';
 import {
   levelColors,
@@ -16,7 +16,7 @@ import {
 } from '../constants';
 
 interface LogRowProps {
-  log: LogEntry;
+  log: FastlyLogEntry;
   onClick: () => void;
 }
 
@@ -25,13 +25,11 @@ export const LogRow = memo(function LogRow({ log, onClick }: LogRowProps) {
 
   // Build message with request details if available
   let displayMessage = log.source;
-  let subroutine: string;
-  if (log.source === 'cdn' && log.data && typeof log.data.subroutine === 'string') {
-    subroutine = log.data.subroutine.toUpperCase();
-  } else if (log.source === 'cdn') {
-    subroutine = 'UNKNOWN';
+  let event: string;
+  if (log.source === 'cdn') {
+    event = log.event.toUpperCase()
   } else {
-    subroutine = 'EDGE';
+    event = 'EDGE';
   }
 
   // Normalize cache status for color matching (handle HIT-CLUSTER, MISS-CLUSTER, etc.)
@@ -70,9 +68,9 @@ export const LogRow = memo(function LogRow({ log, onClick }: LogRowProps) {
       </span>
       <span
         className="text-xs truncate flex-1"
-        style={{ color: cacheColors[subroutine] || 'var(--color-text-secondary)' }}
+        style={{ color: cacheColors[event] || 'var(--color-text-secondary)' }}
       >
-        {subroutine}
+        {event}
       </span>
       <ChevronRight
         className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0"
