@@ -23,10 +23,6 @@ import {
   resetState,
 } from "./state.js";
 import { pollRecords } from "./shard-manager.js";
-import { processRecord } from "./record-processor.js";
-
-// Re-export for backward compatibility
-export { processRecord, pollRecords };
 
 /**
  * Start the Kinesis consumer

@@ -16,10 +16,13 @@ import {
   setIsStopping,
   incrementErrors,
   updateLastPollTime,
+  incrementRecordsProcessed,
+  updateLastRecordTime,
   INFRASTRUCTURE_CHECK_INTERVAL,
 } from "./state.js";
-import { processRecord } from "./record-processor.js";
 import { isInfrastructureAvailable } from "./aws-setup.js";
+import { insertLog, insertLogWithMetrics } from "../db/index.js";
+import { broadcastLog } from "../sse/index.js";
 
 /**
  * Poll records from all shards
@@ -119,5 +122,26 @@ async function reinitializeShardIterator(
       `[Kinesis] Failed to reinitialize iterator for shard ${shardId}:`,
       reinitError,
     );
+  }
+}
+
+export function processRecord(data: Uint8Array | undefined): void {
+  if (!data) return;
+
+  try {
+    const text = Buffer.from(data).toString("utf-8");
+    const record = JSON.parse(text);
+    console.log(record);
+
+    incrementRecordsProcessed();
+    updateLastRecordTime(Date.now());
+
+    insertLog(record);
+
+    // Broadcast to SSE subscribers
+    broadcastLog(record);
+  } catch {
+    incrementErrors();
+    // Invalid JSON, skip
   }
 }
