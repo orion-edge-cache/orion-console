@@ -5,9 +5,8 @@
  */
 
 import { db } from "./schema.js";
-import type { CDNSummaryLog } from "../kinesis/types.js";
-import type { MetricsBucket } from "../types/system.js";
-import { parseTimestamp } from "../kinesis/record-processor.js";
+import type { MetricsBucket, MetricParams } from "../types/index.js";
+import { parseTimestamp } from "../kinesis/utils.js";
 
 // Re-export MetricsBucket for convenience
 export type { MetricsBucket };
@@ -40,18 +39,18 @@ const upsertMetrics1sStmt = db.prepare(`
 /**
  * Update metrics bucket for a log entry
  */
-export function updateMetricsBucket(log: CDNSummaryLog): void {
+export function updateMetricsBucket(log: MetricParams): void {
   const timestamp = parseTimestamp(log);
   const bucket = Math.floor(timestamp); // 1-second bucket
 
   // Handle variants like HIT-CLUSTER, MISS-CLUSTER, etc.
-  const status = log.fastly_cache_state?.toUpperCase() || "";
+  const status = log.cache_status?.toUpperCase() || "";
   const isHit = status.startsWith("HIT");
   const isMiss = status.startsWith("MISS");
   const isPass = status.startsWith("PASS") || status === "SYNTH";
   const is4xx =
-    log.resp_status && log.resp_status >= 400 && log.resp_status < 500;
-  const is5xx = log.resp_status && log.resp_status >= 500;
+    log.status_code && log.status_code >= 400 && log.status_code < 500;
+  const is5xx = log.status_code && log.status_code >= 500;
 
   try {
     upsertMetrics1sStmt.run({

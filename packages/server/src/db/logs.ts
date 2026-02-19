@@ -6,48 +6,51 @@
 
 import { db } from "./schema.js";
 import { updateMetricsBucket } from "./metrics.js";
-import type { FastlyLogEntry } from "@orion/infra";
+import type { FastlyLogEntry, CdnLogDeliverData } from "@orion/infra";
+import type { MetricParams } from "../types/index.js";
+import { convertLatencyToMs, isDeliverLog } from "../kinesis/utils.js";
 
 const insertLogStmt = db.prepare(`
   INSERT INTO logs (
-    timestamp, level, source, request_method, url, status_code,
-    latency_ms, cache_status, operation_type, raw_json
+    timestamp, level, source, event, message, data
   ) VALUES (
-    @timestamp, @level, @source, @request_method, @url, @status_code,
+    @timestamp, @level, @source, @event, @message, @data,
     @latency_ms, @cache_status, @operation_type, @raw_json
   )
 `);
 
 /**
- * Insert a log entry into the database
+ * Convert a FastlyLogEntry to LogInsertParams for database insertion
  */
-export function insertLog(log: FastlyLogEntry): void {
-  if (!isDeliverLog(log)) return;
-
-  const dataa = log.data;
-  insertLogStmt.run({
-    timestamp: log.timestamp,
-    level: log.level || "info",
-    source: log.source || "backend",
-    request_method: log.data.req_method || null,
-    url: log.req_url || null,
-    status_code: log.resp_status || null,
-    latency_ms: log.latency_ms || null,
-    cache_status: log.resp_status || null,
-    operation_type: log.operation_type || null,
-    raw_json: JSON.stringify(log),
-  });
-  // Note: Metrics are updated via recordRequest() in the Kinesis consumer
-  // only for actual request completion logs (those with response_state)
+export function makeMetricParams(log: FastlyLogEntry): MetricParams {
+  const data = log.data as CdnLogDeliverData;
+  const latency_ms = convertLatencyToMs(log);
+  return {
+    timestamp: Date.parse(log.timestamp),
+    level: log.level,
+    source: log.source,
+    event: log.event,
+    message: log.message,
+    request_method: data.req_method,
+    url: data.req_url,
+    status_code: data.resp_status,
+    latency_ms,
+    cache_status: data.fastly_cache_state,
+    operation_type:
+      data.req_x_operation_type === "null" ? null : data.req_x_operation_type,
+    data: JSON.stringify(log),
+  };
 }
 
 /**
- * Insert log AND update metrics bucket (for request completion logs only)
+ * Insert a log entry into the database
  */
-export function insertLogWithMetrics(log: CDNSummaryLog): void {
-  insertLog(log);
-  if (log.fastly_cache_state || log.resp_status) {
-    updateMetricsBucket(log);
+export function insertLog(log: FastlyLogEntry): void {
+  const params = { ...log, data: JSON.stringify(log.data) };
+  insertLogStmt.run(params);
+  if (isDeliverLog(log)) {
+    const metricParams: MetricParams = makeMetricParams(log);
+    updateMetricsBucket(metricParams);
   }
 }
 
@@ -67,7 +70,3 @@ export function getLogs(
 ): FastlyLogEntry[] {
   return getLogsStmt.all({ since, limit }) as FastlyLogEntry[];
 }
-
-const isDeliverLog = (log: FastlyLogEntry) => {
-  return log.event.toLowerCase() === "deliver";
-};

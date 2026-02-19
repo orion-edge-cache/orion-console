@@ -29,20 +29,11 @@ db.exec(`
     timestamp INTEGER NOT NULL,          -- Unix ms
     level TEXT DEFAULT 'info',           -- info, warn, error
     source TEXT DEFAULT 'cdn',           -- cdn, compute, backend, system
-
-    -- Request data
-    request_method TEXT,
-    url TEXT,
-    status_code INTEGER,
-    latency_ms REAL,
-    cache_status TEXT,                   -- HIT, MISS, PASS, etc.
-
-    -- GraphQL specific
-    operation_type TEXT,                 -- query, mutation
-    operation_name TEXT,
+    event TEXT DEFAULT 'debug',          -- debug, error, health check, purge, cache, recv, hash, miss, hit, pass, fetch, deliver
+    message TEXT DEFAULT NULL,
 
     -- Full JSON for debugging
-    raw_json TEXT
+    data TEXT
   );
 
   -- Index for time-based queries
