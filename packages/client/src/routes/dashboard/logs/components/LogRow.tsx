@@ -24,13 +24,8 @@ export const LogRow = memo(function LogRow({ log, onClick }: LogRowProps) {
   if (!log) return null;
 
   // Build message with request details if available
-  let displayMessage = log.source;
-  let event: string;
-  if (log.source === 'cdn') {
-    event = log.event.toUpperCase()
-  } else {
-    event = 'EDGE';
-  }
+  let message = log.message;
+  let event: string = log.event.toUpperCase();
 
   // Normalize cache status for color matching (handle HIT-CLUSTER, MISS-CLUSTER, etc.)
 
@@ -55,22 +50,21 @@ export const LogRow = memo(function LogRow({ log, onClick }: LogRowProps) {
         {formatTimestamp(log.timestamp)}
       </span>
       <span
-        className="flex-shrink-0 w-10 text-xs"
-        style={{ color: levelColors[log.level] || 'var(--color-text-muted)' }}
-      >
-        [{log.level?.toUpperCase().slice(0, 4) || 'INFO'}]
-      </span>
-      <span
         className="flex-shrink-0 w-16 text-xs"
         style={{ color: sourceColors[log.source] || 'var(--color-text-muted)' }}
       >
         [{log.source || 'system'}]
       </span>
       <span
-        className="text-xs truncate flex-1"
+        className="text-xs truncate flex-shrink-0"
         style={{ color: cacheColors[event] || 'var(--color-text-secondary)' }}
       >
-        {event}
+        [{event}]
+      </span>
+      <span
+        className="text-xs truncate flex-1"
+      >
+        {message}
       </span>
       <ChevronRight
         className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0"

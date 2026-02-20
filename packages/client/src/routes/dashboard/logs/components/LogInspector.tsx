@@ -29,6 +29,7 @@ export function LogInspector({ log, onClose }: LogInspectorProps) {
 
   const fields: { label: string; value: string | number | boolean | undefined; color?: string }[] = [
     { label: 'Timestamp', value: new Date(log.timestamp).toISOString() },
+    { label: 'Request ID', value: log.request_id },
     { label: 'Level', value: log.level?.toUpperCase(), color: levelColors[log.level] },
     { label: 'Source', value: log.source, color: sourceColors[log.source] },
     { label: 'Event', value: log.event, color: levelColors[log.level] },

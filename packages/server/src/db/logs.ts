@@ -12,10 +12,9 @@ import { convertLatencyToMs, isDeliverLog } from "../kinesis/utils.js";
 
 const insertLogStmt = db.prepare(`
   INSERT INTO logs (
-    timestamp, level, source, event, message, data
+    request_id, timestamp, level, source, event, message, data
   ) VALUES (
-    @timestamp, @level, @source, @event, @message, @data,
-    @latency_ms, @cache_status, @operation_type, @raw_json
+    @request_id, @timestamp, @level, @source, @event, @message, @data
   )
 `);
 
@@ -46,12 +45,15 @@ export function makeMetricParams(log: FastlyLogEntry): MetricParams {
  * Insert a log entry into the database
  */
 export function insertLog(log: FastlyLogEntry): void {
-  const params = { ...log, data: JSON.stringify(log.data) };
+  const params = { ...defaultParams(), ...log, data: JSON.stringify(log.data) };
+  console.log(`INSERT LOGS: ${JSON.stringify(params)}`);
   insertLogStmt.run(params);
   if (isDeliverLog(log)) {
+    console.log(`IS DELIVERY LOG: ${log.event.toLowerCase() === "deliver"}`);
     const metricParams: MetricParams = makeMetricParams(log);
     updateMetricsBucket(metricParams);
   }
+  console.log(`AFTER IS DELIVERY LOG: ${log.event}`);
 }
 
 const getLogsStmt = db.prepare(`
@@ -60,6 +62,17 @@ const getLogsStmt = db.prepare(`
   ORDER BY timestamp DESC
   LIMIT @limit
 `);
+
+const defaultParams = () => {
+  return {
+    request_id: "abc123",
+    timestamp: new Date().toISOString(),
+    event: "debug",
+    level: "info",
+    message: "",
+    data: {},
+  };
+};
 
 /**
  * Get logs since a given timestamp

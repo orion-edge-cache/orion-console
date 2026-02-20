@@ -8,7 +8,7 @@
 export { db, DB_PATH, ORION_CONFIG_DIR } from "./schema.js";
 
 // Export log operations
-export { insertLog, insertLogWithMetrics, getLogs } from "./logs.js";
+export { insertLog, getLogs } from "./logs.js";
 
 // Export metrics operations
 export {

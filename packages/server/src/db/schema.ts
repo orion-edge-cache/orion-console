@@ -26,10 +26,11 @@ db.exec(`
   -- Raw request logs (kept for 24 hours)
   CREATE TABLE IF NOT EXISTS logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id TEXT DEFAULT NULL,
     timestamp INTEGER NOT NULL,          -- Unix ms
     level TEXT DEFAULT 'info',           -- info, warn, error
     source TEXT DEFAULT 'cdn',           -- cdn, compute, backend, system
-    event TEXT DEFAULT 'debug',          -- debug, error, health check, purge, cache, recv, hash, miss, hit, pass, fetch, deliver
+    event TEXT DEFAULT 'debug',          -- COMPUTE: debug, error, health check, purge, cache.  CDN: recv, hash, miss, hit, pass, fetch, deliver
     message TEXT DEFAULT NULL,
 
     -- Full JSON for debugging
@@ -38,7 +39,6 @@ db.exec(`
 
   -- Index for time-based queries
   CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp DESC);
-  CREATE INDEX IF NOT EXISTS idx_logs_cache_status ON logs(cache_status, timestamp);
 
   -- Pre-aggregated metrics (1-second buckets)
   CREATE TABLE IF NOT EXISTS metrics_1s (
