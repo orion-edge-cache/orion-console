@@ -8,7 +8,6 @@ const router = express.Router();
 router.get("/status", async (_req, res) => {
   try {
     const status = await getSystemState();
-    console.log(status);
     res.json(status);
   } catch (error) {
     console.error("Error getting system status:", error);

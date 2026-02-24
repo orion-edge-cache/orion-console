@@ -131,8 +131,6 @@ export function processRecord(data: Uint8Array | undefined): void {
   try {
     const text = Buffer.from(data).toString("utf-8");
     const record = JSON.parse(text);
-    console.log("LOGFILE");
-    console.log(record);
 
     incrementRecordsProcessed();
     updateLastRecordTime(Date.now());

@@ -46,14 +46,11 @@ export function makeMetricParams(log: FastlyLogEntry): MetricParams {
  */
 export function insertLog(log: FastlyLogEntry): void {
   const params = { ...defaultParams(), ...log, data: JSON.stringify(log.data) };
-  console.log(`INSERT LOGS: ${JSON.stringify(params)}`);
   insertLogStmt.run(params);
   if (isDeliverLog(log)) {
-    console.log(`IS DELIVERY LOG: ${log.event.toLowerCase() === "deliver"}`);
     const metricParams: MetricParams = makeMetricParams(log);
     updateMetricsBucket(metricParams);
   }
-  console.log(`AFTER IS DELIVERY LOG: ${log.event}`);
 }
 
 const getLogsStmt = db.prepare(`

@@ -95,7 +95,6 @@ export function broadcast(
   event: string,
   data: unknown,
 ): void {
-  console.log("Broadcast event");
   const message = formatSSE(event, data);
 
   for (const [id, sub] of subscribers) {
@@ -146,7 +145,6 @@ function formatSSE(event: string, data: unknown): string {
  * Broadcast a log entry
  */
 export function broadcastLog(log: FastlyLogEntry): void {
-  console.log("Broadcast log");
   broadcast("logs", "log", log);
 }
 

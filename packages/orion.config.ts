@@ -9,7 +9,7 @@ const config = {
   "version": "1.0",
   "name": "orion",
   "defaults": {
-    "maxAge": 60,
+    "maxAge": 90,
     "staleWhileRevalidate": 0,
     "staleIfError": 0
   },
